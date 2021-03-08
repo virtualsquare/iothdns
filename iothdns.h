@@ -95,7 +95,7 @@ void iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 
 #define IOTHDNS_MAXNAME 256
 #define IOTHDNS_MAXSTRING 255
-#define IOTHDNS_UDP_MAXBUF 255
+#define IOTHDNS_UDP_MAXBUF 512
 #define IOTHDNS_TCP_MAXBUF 65536
 
 #define IOTHDNS_SECTIONS 4
