@@ -24,8 +24,8 @@
 
 struct iothdns_pkt {
 	struct volstream *vols;
-  FILE *f;
-  int count[IOTHDNS_SECTIONS];
+	FILE *f;
+	int count[IOTHDNS_SECTIONS];
 	union {
 		struct { // WRONLY: compose packet
 			struct name_compr *nc;
@@ -34,59 +34,59 @@ struct iothdns_pkt {
 		};
 		struct { // RDONLY: parse packets
 			void *buf;
-      size_t bufsize;
+			size_t bufsize;
 			long nextrr;
 		};
 	};
 };
 
 void iothdns_put_int8(struct iothdns_pkt *vpkt, uint8_t data) {
-  fputc(data, vpkt->f);
+	fputc(data, vpkt->f);
 }
 
 void iothdns_put_int16(struct iothdns_pkt *vpkt, uint16_t data) {
-  fputc(data >> 8, vpkt->f);
-  fputc(data, vpkt->f);
+	fputc(data >> 8, vpkt->f);
+	fputc(data, vpkt->f);
 }
 
 void iothdns_put_int32(struct iothdns_pkt *vpkt, uint32_t data) {
-  fputc(data >> 24, vpkt->f);
-  fputc(data >> 16, vpkt->f);
-  fputc(data >> 8, vpkt->f);
-  fputc(data, vpkt->f);
+	fputc(data >> 24, vpkt->f);
+	fputc(data >> 16, vpkt->f);
+	fputc(data >> 8, vpkt->f);
+	fputc(data, vpkt->f);
 }
 
 void iothdns_put_data(struct iothdns_pkt *vpkt, void *data, uint16_t len) {
-  fwrite(data, len, 1, vpkt->f);
+	fwrite(data, len, 1, vpkt->f);
 }
 
 void iothdns_put_name(struct iothdns_pkt *vpkt, char *name) {
-  char dnsname[IOTHDNS_MAXNAME];
-  int len = name2dns(name, dnsname, ftell(vpkt->f), &vpkt->nc);
-  if (len > 0)
-    iothdns_put_data(vpkt, dnsname, len);
+	char dnsname[IOTHDNS_MAXNAME];
+	int len = name2dns(name, dnsname, ftell(vpkt->f), &vpkt->nc);
+	if (len > 0)
+		iothdns_put_data(vpkt, dnsname, len);
 }
 
 void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, char *name) {
-  char dnsname[IOTHDNS_MAXNAME];
-  int len = name2dns(name, dnsname, 0, NULL);
-  if (len > 0)
-    iothdns_put_data(vpkt, dnsname, len);
+	char dnsname[IOTHDNS_MAXNAME];
+	int len = name2dns(name, dnsname, 0, NULL);
+	if (len > 0)
+		iothdns_put_data(vpkt, dnsname, len);
 }
 
 void iothdns_put_string(struct iothdns_pkt *vpkt, char *string) {
-  int len = strlen(string);
-  if (len > IOTHDNS_MAXSTRING) len = IOTHDNS_MAXSTRING;
-  iothdns_put_int8(vpkt, len);
-  iothdns_put_data(vpkt, string, len);
+	int len = strlen(string);
+	if (len > IOTHDNS_MAXSTRING) len = IOTHDNS_MAXSTRING;
+	iothdns_put_int8(vpkt, len);
+	iothdns_put_data(vpkt, string, len);
 }
 
 void iothdns_put_a(struct iothdns_pkt *vpkt, void *addr_ipv4) {
-  iothdns_put_data(vpkt, addr_ipv4, 4);
+	iothdns_put_data(vpkt, addr_ipv4, 4);
 }
 
 void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
-  iothdns_put_data(vpkt, addr_ipv6, 16);
+	iothdns_put_data(vpkt, addr_ipv6, 16);
 }
 
 struct iothdns_pkt *iothdns_put_header(struct iothdns_header *h) {
@@ -108,43 +108,43 @@ struct iothdns_pkt *iothdns_put_header(struct iothdns_header *h) {
 	};
 	return new;
 err:
-  free(new);
-  return NULL;
+	free(new);
+	return NULL;
 }
 
 static void backpatch_rdlength(struct iothdns_pkt *vpkt) {
-  if (vpkt->rdlength_pos > 0) {
-    long pos = ftell(vpkt->f);
-    fseek(vpkt->f, vpkt->rdlength_pos, SEEK_SET);
-    iothdns_put_int16(vpkt, pos - vpkt->rdlength_pos - sizeof(uint16_t));
-    fseek(vpkt->f, pos, SEEK_SET);
-  }
-  vpkt->rdlength_pos = 0;
+	if (vpkt->rdlength_pos > 0) {
+		long pos = ftell(vpkt->f);
+		fseek(vpkt->f, vpkt->rdlength_pos, SEEK_SET);
+		iothdns_put_int16(vpkt, pos - vpkt->rdlength_pos - sizeof(uint16_t));
+		fseek(vpkt->f, pos, SEEK_SET);
+	}
+	vpkt->rdlength_pos = 0;
 }
 
 void iothdns_put_rr(int section, struct iothdns_pkt *vpkt, struct iothdns_rr *rr) {
-  if (section < IOTHDNS_SECTIONS && section >= vpkt->maxsec) {
-    vpkt->maxsec = section;
-    vpkt->count[section]++;
-    backpatch_rdlength(vpkt);
-    iothdns_put_name(vpkt, rr->name);
-    iothdns_put_int16(vpkt, rr->type);
-    iothdns_put_int16(vpkt, rr->class);
-    iothdns_put_int32(vpkt, rr->ttl);
-    vpkt->rdlength_pos = ftell(vpkt->f);
-    iothdns_put_int16(vpkt, 0); // RDLENGTH
-  }
+	if (section < IOTHDNS_SECTIONS && section >= vpkt->maxsec) {
+		vpkt->maxsec = section;
+		vpkt->count[section]++;
+		backpatch_rdlength(vpkt);
+		iothdns_put_name(vpkt, rr->name);
+		iothdns_put_int16(vpkt, rr->type);
+		iothdns_put_int16(vpkt, rr->class);
+		iothdns_put_int32(vpkt, rr->ttl);
+		vpkt->rdlength_pos = ftell(vpkt->f);
+		iothdns_put_int16(vpkt, 0); // RDLENGTH
+	}
 }
 
 static void iothdns_put_flush(struct iothdns_pkt *vpkt) {
 	backpatch_rdlength(vpkt);
-  fseek(vpkt->f, 2 * sizeof(uint16_t), SEEK_SET);
-  iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_QUERY]);
-  iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_ANSWER]);
-  iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_AUTH]);
-  iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_ADDITIONAL]);
-  fseek(vpkt->f, 0, SEEK_END);
-  fflush(vpkt->f);
+	fseek(vpkt->f, 2 * sizeof(uint16_t), SEEK_SET);
+	iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_QUERY]);
+	iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_ANSWER]);
+	iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_AUTH]);
+	iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_ADDITIONAL]);
+	fseek(vpkt->f, 0, SEEK_END);
+	fflush(vpkt->f);
 }
 
 uint8_t iothdns_get_int8(struct iothdns_pkt *vpkt) {
@@ -163,7 +163,7 @@ uint32_t iothdns_get_int32(struct iothdns_pkt *vpkt) {
 
 void iothdns_get_data(struct iothdns_pkt *vpkt, void *data, uint16_t len) {
 	size_t retval = fread(data, len, 1, vpkt->f);
-  (void) retval;
+	(void) retval;
 }
 
 char *iothdns_get_name(struct iothdns_pkt *vpkt, char *name) {
@@ -221,7 +221,7 @@ void iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
 }
 
 struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size_t size, char *qnamebuf) {
-  struct iothdns_pkt *new = calloc(1, sizeof(*new));
+	struct iothdns_pkt *new = calloc(1, sizeof(*new));
 	new->f = fmemopen(buf, size, "r");
 	if (new->f == NULL)
 		goto err;
@@ -240,10 +240,10 @@ struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size
 	new->buf = buf;
 	new->bufsize = size;
 	new->nextrr = ftell(new->f);
-  return new;
+	return new;
 err:
-  free(new);
-  return NULL;
+	free(new);
+	return NULL;
 }
 
 static int vdne_get_section(struct iothdns_pkt *vpkt) {
@@ -291,6 +291,6 @@ size_t iothdns_buflen(struct iothdns_pkt *vpkt) {
 void iothdns_free(struct iothdns_pkt *vpkt) {
 	if (vpkt->vols != NULL)
 		name_compr_free(vpkt->nc);
-  fclose(vpkt->f);
-  free(vpkt);
+	fclose(vpkt->f);
+	free(vpkt);
 }

@@ -10,16 +10,16 @@ int any_cb (int section, struct iothdns_rr *rr, void *arg) {
 
 int main(int argc, char *argv[]) {
 	struct ioth *ioth = ioth_newstack(argv[2], argv[3]);
-  struct iothdns *ns = iothdns_init_strcfg(ioth, "nameserver 8.8.8.8");
-  char ipstr[INET6_ADDRSTRLEN];
-  struct in_addr ipaddr[1];
-  struct in6_addr ipaddr6[1];
-  int rv = iothdns_lookup_a(ns, argv[1], ipaddr, 1);
-  printf("%d %s\n", rv, inet_ntop(AF_INET, ipaddr, ipstr, INET6_ADDRSTRLEN));
-  rv = iothdns_lookup_aaaa(ns, argv[1], ipaddr6, 1);
-  printf("%d %s\n", rv, inet_ntop(AF_INET6, ipaddr6, ipstr, INET6_ADDRSTRLEN));
-  rv = iothdns_lookup_cb_tcp(ns, argv[1], IOTHDNS_TYPE_ANY, any_cb, NULL);
+	struct iothdns *ns = iothdns_init_strcfg(ioth, "nameserver 8.8.8.8");
+	char ipstr[INET6_ADDRSTRLEN];
+	struct in_addr ipaddr[1];
+	struct in6_addr ipaddr6[1];
+	int rv = iothdns_lookup_a(ns, argv[1], ipaddr, 1);
+	printf("%d %s\n", rv, inet_ntop(AF_INET, ipaddr, ipstr, INET6_ADDRSTRLEN));
+	rv = iothdns_lookup_aaaa(ns, argv[1], ipaddr6, 1);
+	printf("%d %s\n", rv, inet_ntop(AF_INET6, ipaddr6, ipstr, INET6_ADDRSTRLEN));
+	rv = iothdns_lookup_cb_tcp(ns, argv[1], IOTHDNS_TYPE_ANY, any_cb, NULL);
 
-  iothdns_fini(ns);
+	iothdns_fini(ns);
 }
 

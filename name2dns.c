@@ -55,8 +55,8 @@ static short name_compr_search(struct name_compr *head, char *name) {
 		//printf("CMP %d %s %s\n", lendiff, scan->name, name );
 		if (lendiff == 0 && strcasecmp(scan->name, name) == 0)
 			return scan->pos;
-    else if (lendiff > 0 && scan->name[lendiff - 1] == '.'
-        && strcasecmp(scan->name + lendiff, name) == 0)
+		else if (lendiff > 0 && scan->name[lendiff - 1] == '.'
+				&& strcasecmp(scan->name + lendiff, name) == 0)
 			return scan->pos + lendiff;
 	}
 	return 0;
@@ -68,26 +68,26 @@ static short name_compr_search(struct name_compr *head, char *name) {
 	 If it does, it generates the compression pattern otherwise it converts
 	 the label in dns format (length+chars) */
 static unsigned int lname2dns(char *name, char *out, struct name_compr *compr_head) {
-  unsigned int len = 0;
-  while (*name) {
+	unsigned int len = 0;
+	while (*name) {
 		unsigned short oldpos;
-    char *itemlen = out++;
+		char *itemlen = out++;
 		if ((oldpos = name_compr_search(compr_head, name)) != 0 &&
 				oldpos < 0xc000) {
 			*itemlen = 0xc0 | (oldpos >> 8);
 			*out =oldpos & 0xff;
 			return len + 2;
 		}
-    //printf("name %s\n",name);
-    while (*name !=0 && *name != '.')
-      *out++ = *name++;
-    if (*name == '.') name++;
-    *itemlen = out - itemlen - 1;
-    len += (*itemlen) + 1;
-    //printf("itemlen %u\n",*itemlen);
-  }
-  *out=0;
-  return len + 1;
+		//printf("name %s\n",name);
+		while (*name !=0 && *name != '.')
+			*out++ = *name++;
+		if (*name == '.') name++;
+		*itemlen = out - itemlen - 1;
+		len += (*itemlen) + 1;
+		//printf("itemlen %u\n",*itemlen);
+	}
+	*out=0;
+	return len + 1;
 }
 
 /* convert a name in DNS format (using compression if compr_head != NULL):
@@ -102,7 +102,7 @@ unsigned int name2dns(const char *name, char *out, short pos, struct name_compr 
 	else {
 		int len;
 		if (name[namelen - 1] == '.') namelen--;
-    char lname[namelen + 1];
+		char lname[namelen + 1];
 		sprintf(lname, "%*.*s", namelen, namelen, name);
 		if (compr_head) {
 			len = lname2dns(lname, out, *compr_head);

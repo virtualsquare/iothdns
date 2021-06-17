@@ -144,11 +144,11 @@ struct iothdns *iothdns_init_strcfg(struct ioth *stack, char *config) {
 }
 
 int iothdns_update(struct iothdns *iothdns, char *path_config) {
-	 return iothdns_init_update(iothdns, NULL, path_config) == NULL ? -1 : 0;
+	return iothdns_init_update(iothdns, NULL, path_config) == NULL ? -1 : 0;
 }
 
 int iothdns_update_strcfg(struct iothdns *iothdns, char *config) {
-	 return iothdns_init_update_strcfg(iothdns, NULL, config) == NULL ? -1 : 0;
+	return iothdns_init_update_strcfg(iothdns, NULL, config) == NULL ? -1 : 0;
 }
 
 void iothdns_fini(struct iothdns *iothdns) {
@@ -158,9 +158,9 @@ void iothdns_fini(struct iothdns *iothdns) {
 /* dialog function prototype **for clients**
 	 dialog = open socket + connect + send + recv reply (or timeout) + close */
 typedef size_t dialog_function_t(struct ioth *stack,
-    const struct sockaddr_storage *addr,
-    void *reqbuf, size_t reqbuflen,
-    void *repbuf, size_t repbuflen);
+		const struct sockaddr_storage *addr,
+		void *reqbuf, size_t reqbuflen,
+		void *repbuf, size_t repbuflen);
 
 /* UDP dialog */
 static size_t udp_client_dialog(struct ioth *stack,
@@ -190,35 +190,35 @@ static size_t tcp_get_pkt(int s,
 	}
 	uint8_t tcpheader[2];
 	size_t len =  ioth_read(s, tcpheader, sizeof(tcpheader));
-  if (len < sizeof(tcpheader))
-    return errno = EBADMSG, -1;
-  size_t pktlen = tcpheader[0] << 8 | tcpheader[1];
-  if (pktlen > repbuflen)
-    return errno = EBADMSG, -1;
-  struct iovec iov_rdd[] = {{repbuf, pktlen}};
-  for (;;) {
-    if (poll(pfd, 1, IOTHDNS_TIMEOUT_MS) == 0)
-      return 0;
-    len = ioth_readv(s, iov_rdd, 1);
-    if (len <= 0)
+	if (len < sizeof(tcpheader))
+		return errno = EBADMSG, -1;
+	size_t pktlen = tcpheader[0] << 8 | tcpheader[1];
+	if (pktlen > repbuflen)
+		return errno = EBADMSG, -1;
+	struct iovec iov_rdd[] = {{repbuf, pktlen}};
+	for (;;) {
+		if (poll(pfd, 1, IOTHDNS_TIMEOUT_MS) == 0)
+			return 0;
+		len = ioth_readv(s, iov_rdd, 1);
+		if (len <= 0)
 			return errno = EBADMSG, -1;
-    iov_rdd->iov_base = ((uint8_t *) iov_rdd->iov_base) + len;
-    iov_rdd->iov_len -= len;
-    if (iov_rdd->iov_len <= 0)
-      break;
-  }
-  return pktlen;
+		iov_rdd->iov_base = ((uint8_t *) iov_rdd->iov_base) + len;
+		iov_rdd->iov_len -= len;
+		if (iov_rdd->iov_len <= 0)
+			break;
+	}
+	return pktlen;
 }
 
 static size_t tcp_client_dialog(struct ioth *stack,
-    const struct sockaddr_storage *addr,
-    void *reqbuf, size_t reqbuflen,
-    void *repbuf, size_t repbuflen) {
-  int s = ioth_msocket(stack, addr->ss_family, SOCK_STREAM, 0);
+		const struct sockaddr_storage *addr,
+		void *reqbuf, size_t reqbuflen,
+		void *repbuf, size_t repbuflen) {
+	int s = ioth_msocket(stack, addr->ss_family, SOCK_STREAM, 0);
 	uint8_t tcpheader[2] = {reqbuflen >> 8, reqbuflen};
-  struct iovec iov_wr[] = {{tcpheader, sizeof(tcpheader)}, {reqbuf, reqbuflen}};
-  ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_storage));
-  ioth_writev(s, iov_wr, 2);
+	struct iovec iov_wr[] = {{tcpheader, sizeof(tcpheader)}, {reqbuf, reqbuflen}};
+	ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_storage));
+	ioth_writev(s, iov_wr, 2);
 	size_t len = tcp_get_pkt(s, repbuf, repbuflen);
 	ioth_close(s);
 	return len;
@@ -267,9 +267,9 @@ static struct iothdns_pkt *__iothdns_lookup(struct iothdns *iothdns,
 	 search list.
 	 otherwise call the helper #2 here above */
 static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
-    dialog_function_t *dialog_function,
-    char *name, int type,
-    uint8_t *outbuf, size_t outbuflen) {
+		dialog_function_t *dialog_function,
+		char *name, int type,
+		uint8_t *outbuf, size_t outbuflen) {
 	struct iothdns_pkt *retval;
 	pthread_mutex_lock(&iothdns->mutex);
 	if (strchr(name, '.') == NULL && iothdns->search != NULL) {
@@ -283,7 +283,7 @@ static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 					name, len, scan);
 			//printf("SEARCH! %s\n", qname);
 			retval = __iothdns_lookup(iothdns, dialog_function, qname, type,
-        outbuf, outbuflen);
+					outbuf, outbuflen);
 			scan += len - 1;
 		}
 	} else {
