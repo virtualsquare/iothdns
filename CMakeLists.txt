@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project("libiothdns"
 		DESCRIPTION "dns"
 		HOMEPAGE_URL "https://github.com/rd235/libiothdns"
-    VERSION 0.1.0
+    VERSION 0.1.1
     LANGUAGES C)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")
@@ -30,7 +30,8 @@ endforeach(HEADER)
 
 add_definitions(-D_GNU_SOURCE)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_library(iothdns SHARED iothdns.c iothdns_pkt.c name2dns.c)
+add_library(iothdns SHARED iothdns.c iothdns_pkt.c name2dns.c
+		iothdns_gai.c iothdns_getserv.c iothdns_gethost.c)
 target_link_libraries(iothdns volatilestream ioth pthread)
 
 set_target_properties(iothdns PROPERTIES VERSION ${PROJECT_VERSION}

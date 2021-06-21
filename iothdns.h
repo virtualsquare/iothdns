@@ -3,8 +3,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/uio.h>
-#include <netinet/in.h>
+#include <netdb.h>
 #include <ioth.h>
 
 #define IOTHDNS_MAXNS 3
@@ -29,6 +28,23 @@ int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *
 
 /* lookup IPv6 addresses */
 int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
+
+/* iothdns getaddrinfo (see getaddrinfo(3)) */
+int iothdns_getaddrinfo(struct iothdns *iothdns,
+		const char *node, const char *service,
+		const struct addrinfo *hints,
+		struct addrinfo **res);
+
+void iothdns_freeaddrinfo(struct addrinfo *res);
+
+const char *ioth_gai_strerror(int errcode);
+
+/* iothdns getnameinfo (see getnameinfo(3)) */
+int iothdns_getnameinfo(struct iothdns *iothdns,
+		const struct sockaddr *addr, socklen_t addrlen,
+		char *host, socklen_t hostlen,
+		char *serv, socklen_t servlen, int flags);
+
 
 /* general purpose lookup functions: 'lookup_cb' is a callback for each resource record */
 struct iothdns_rr;
