@@ -152,6 +152,7 @@ int iothdns_update_strcfg(struct iothdns *iothdns, char *config) {
 }
 
 void iothdns_fini(struct iothdns *iothdns) {
+	if (iothdns->search != NULL) free(iothdns->search);
 	free(iothdns);
 }
 
