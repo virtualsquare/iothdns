@@ -228,7 +228,7 @@ static size_t tcp_client_dialog(struct ioth *stack,
 	 try all the ns servers */
 static struct iothdns_pkt *__iothdns_lookup(struct iothdns *iothdns,
 		dialog_function_t *dialog_function,
-		char *name, int type,
+		const char *name, int type,
 		uint8_t *outbuf, size_t outbuflen) {
 	uint16_t id = random();
 	int dnsno;
@@ -268,7 +268,7 @@ static struct iothdns_pkt *__iothdns_lookup(struct iothdns *iothdns,
 	 otherwise call the helper #2 here above */
 static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 		dialog_function_t *dialog_function,
-		char *name, int type,
+		const char *name, int type,
 		uint8_t *outbuf, size_t outbuflen) {
 	struct iothdns_pkt *retval;
 	pthread_mutex_lock(&iothdns->mutex);
@@ -296,12 +296,12 @@ static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 
 /* prototype for lookup functions */
 typedef struct iothdns_pkt *iothdns_lookup_f_t(struct iothdns *iothdns,
-		char *name, int type,
+		const char *name, int type,
 		uint8_t *outbuf, size_t outbuflen);
 
 /* lookup via UDP */
 static struct iothdns_pkt *iothdns_udp_lookup(struct iothdns *iothdns,
-		char *name, int type,
+		const char *name, int type,
 		uint8_t *outbuf, size_t outbuflen) {
 	return _iothdns_lookup(iothdns, udp_client_dialog,
 			name, type, outbuf, outbuflen);
@@ -309,14 +309,14 @@ static struct iothdns_pkt *iothdns_udp_lookup(struct iothdns *iothdns,
 
 /* lookup via TCP */
 static struct iothdns_pkt *iothdns_tcp_lookup(struct iothdns *iothdns,
-		char *name, int type,
+		const char *name, int type,
 		uint8_t *outbuf, size_t outbuflen) {
 	return _iothdns_lookup(iothdns, tcp_client_dialog,
 			name, type, outbuf, outbuflen);
 }
 
 /* lookup IPv4 addresses */
-int iothdns_lookup_a(struct iothdns *iothdns, char *name, struct in_addr *a, int n) {
+int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n) {
 	int retval = 0;
 	uint8_t buf[IOTHDNS_UDP_MAXBUF];
 	struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_A, buf, IOTHDNS_UDP_MAXBUF);
@@ -337,7 +337,7 @@ int iothdns_lookup_a(struct iothdns *iothdns, char *name, struct in_addr *a, int
 }
 
 /* lookup IPv6 addresses */
-int iothdns_lookup_aaaa(struct iothdns *iothdns, char *name, struct in6_addr *aaaa, int n) {
+int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n) {
 	int retval = 0;
 	uint8_t buf[IOTHDNS_UDP_MAXBUF];
 	struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_AAAA, buf, IOTHDNS_UDP_MAXBUF);
@@ -357,7 +357,7 @@ int iothdns_lookup_aaaa(struct iothdns *iothdns, char *name, struct in6_addr *aa
 	return retval;
 }
 
-static int _iothdns_lookup_cb(struct iothdns *iothdns, char *name, int qtype,
+static int _iothdns_lookup_cb(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg,
 		iothdns_lookup_f_t *iothdns_lookup_f, size_t outbuflen) {
 	int retval = 0;
@@ -369,19 +369,19 @@ static int _iothdns_lookup_cb(struct iothdns *iothdns, char *name, int qtype,
 	if (pkt == NULL)
 		return -1;
 	while (retval == 0 && (section = iothdns_get_rr(pkt, &rr, rname)) != 0) {
-		retval = lookup_cb(section, &rr, arg);
+		retval = lookup_cb(section, &rr, pkt, arg);
 	}
 	iothdns_free(pkt);
 	return retval;
 }
 
 /* general purpose lookup function: it calls 'lookup_cb' for each resource record */
-int iothdns_lookup_cb(struct iothdns *iothdns, char *name, int qtype,
+int iothdns_lookup_cb(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg) {
 	return _iothdns_lookup_cb(iothdns, name, qtype, lookup_cb, arg, iothdns_udp_lookup, IOTHDNS_UDP_MAXBUF);
 }
 
-int iothdns_lookup_cb_tcp(struct iothdns *iothdns, char *name, int qtype,
+int iothdns_lookup_cb_tcp(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg) {
 	return _iothdns_lookup_cb(iothdns, name, qtype, lookup_cb, arg, iothdns_tcp_lookup, IOTHDNS_TCP_MAXBUF);
 }

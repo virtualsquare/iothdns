@@ -13,6 +13,7 @@
 #define IOTHDNS_DEFAULT_PORT 53
 
 struct iothdns;
+struct iothdns_pkt;
 /* init/update configuration */
 struct iothdns *iothdns_init(struct ioth *stack, char *path_config);
 struct iothdns *iothdns_init_strcfg(struct ioth *stack, char *config);
@@ -24,22 +25,21 @@ void iothdns_fini(struct iothdns *iothdns);
 /* --------------- client side ----------------- */
 
 /* lookup IPv4 addresses */
-int iothdns_lookup_a(struct iothdns *iothdns, char *name, struct in_addr *a, int n);
+int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n);
 
 /* lookup IPv6 addresses */
-int iothdns_lookup_aaaa(struct iothdns *iothdns, char *name, struct in6_addr *aaaa, int n);
+int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
 
 /* general purpose lookup functions: 'lookup_cb' is a callback for each resource record */
 struct iothdns_rr;
-typedef int lookup_cb_t(int section, struct iothdns_rr *rr, void *arg);
-int iothdns_lookup_cb(struct iothdns *iothdns, char *name, int qtype,
+typedef int lookup_cb_t(int section, struct iothdns_rr *rr, struct iothdns_pkt *vpkt, void *arg);
+int iothdns_lookup_cb(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg);
-int iothdns_lookup_cb_tcp(struct iothdns *iothdns, char *name, int qtype,
+int iothdns_lookup_cb_tcp(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg);
 
 /* --------------- server side ----------------- */
 
-struct iothdns_pkt;
 struct iothdns_header;
 typedef struct iothdns_pkt *parse_request_t(struct iothdns_header *h, void *arg);
 int iothdns_udp_process_request(int fd, parse_request_t *parse_request, void *arg);
@@ -50,13 +50,13 @@ int iothdns_tcp_process_request(int fd, parse_request_t *parse_request, void *ar
 struct iothdns_header {
 	uint16_t id;
 	uint16_t flags;
-	char *qname;
+	const char *qname;
 	uint16_t qtype;
 	uint16_t qclass;
 };
 
 struct iothdns_rr {
-	char *name;
+	const char *name;
 	uint16_t type;
 	uint16_t class;
 	uint32_t ttl;
@@ -76,8 +76,8 @@ void iothdns_put_int8(struct iothdns_pkt *vpkt, uint8_t data);
 void iothdns_put_int16(struct iothdns_pkt *vpkt, uint16_t data);
 void iothdns_put_int32(struct iothdns_pkt *vpkt, uint32_t data);
 void iothdns_put_data(struct iothdns_pkt *vpkt, void *data, uint16_t len);
-void iothdns_put_name(struct iothdns_pkt *vpkt, char *name);
-void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, char *name);
+void iothdns_put_name(struct iothdns_pkt *vpkt, const char *name);
+void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, const char *name);
 void iothdns_put_string(struct iothdns_pkt *vpkt, char *string);
 void iothdns_put_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
 void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);

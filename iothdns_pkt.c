@@ -60,14 +60,14 @@ void iothdns_put_data(struct iothdns_pkt *vpkt, void *data, uint16_t len) {
 	fwrite(data, len, 1, vpkt->f);
 }
 
-void iothdns_put_name(struct iothdns_pkt *vpkt, char *name) {
+void iothdns_put_name(struct iothdns_pkt *vpkt, const char *name) {
 	char dnsname[IOTHDNS_MAXNAME];
 	int len = name2dns(name, dnsname, ftell(vpkt->f), &vpkt->nc);
 	if (len > 0)
 		iothdns_put_data(vpkt, dnsname, len);
 }
 
-void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, char *name) {
+void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, const char *name) {
 	char dnsname[IOTHDNS_MAXNAME];
 	int len = name2dns(name, dnsname, 0, NULL);
 	if (len > 0)
