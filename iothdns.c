@@ -35,6 +35,12 @@ struct iothdns {
 	pthread_mutex_t mutex;
 	struct sockaddr_storage sockaddr[IOTHDNS_MAXNS];
 	char *search;
+	char *paths[IOTHDNS_PATH_SIZE];
+};
+
+static char *iothdns_default_paths[IOTHDNS_PATH_SIZE] = {
+	"/etc/hosts",
+	"/etc/services"
 };
 
 /* common function to initialize/update iothdns */
@@ -151,8 +157,33 @@ int iothdns_update_strcfg(struct iothdns *iothdns, char *config) {
 	return iothdns_init_update_strcfg(iothdns, NULL, config) == NULL ? -1 : 0;
 }
 
+void iothdns_setpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *newvalue) {
+	pthread_mutex_lock(&iothdns->mutex);
+	if (iothdns->paths[pathtag] != NULL) free(iothdns->paths[pathtag]);
+	if (newvalue == NULL)
+		iothdns->paths[pathtag] = NULL;
+	else
+		iothdns->paths[pathtag] = strdup(newvalue);
+	pthread_mutex_unlock(&iothdns->mutex);
+}
+
+int iothdns_getpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *buf, size_t size) {
+	pthread_mutex_lock(&iothdns->mutex);
+	char *value = iothdns->paths[pathtag];
+	if (value == NULL) value = iothdns_default_paths[pathtag];
+	int retvalue = snprintf(buf, size, "%s", value);
+	pthread_mutex_unlock(&iothdns->mutex);
+	return retvalue;
+}
+
 void iothdns_fini(struct iothdns *iothdns) {
+	pthread_mutex_lock(&iothdns->mutex);
 	if (iothdns->search != NULL) free(iothdns->search);
+	for (int i = 0; i < IOTHDNS_PATH_SIZE; i++) {
+		if (iothdns->paths[i] != NULL)
+			free(iothdns->paths[i]);
+	}
+	pthread_mutex_unlock(&iothdns->mutex);
 	free(iothdns);
 }
 

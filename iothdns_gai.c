@@ -16,6 +16,7 @@
  */
 
 #include <stdlib.h>
+#include <limits.h>
 #include <iothdns.h>
 #include <iothdns_getserv.h>
 #include <iothdns_gethost.h>
@@ -53,7 +54,7 @@ static int setprotocol(const struct addrinfo *hints, int socktype) {
 				default:
 					return IPPROTO_TCP;
 			}
-		case SOCK_DGRAM: 
+		case SOCK_DGRAM:
 			switch (hints->ai_protocol) {
 				case IPPROTO_UDP:
 				case IPPROTO_UDPLITE:
@@ -70,7 +71,7 @@ static int setprotocol(const struct addrinfo *hints, int socktype) {
 	}
 }
 
-static int ioth_gaiadd(struct ioth_gaidata *data, 
+static int ioth_gaiadd(struct ioth_gaidata *data,
 		int af, void *addr, int socktype, int port) {
 	size_t newlen = sizeof(struct addrinfo);
 	switch (af) {
@@ -170,7 +171,7 @@ static int lookup_cb_aaaa (int section, struct iothdns_rr *rr, struct iothdns_pk
 	return 0;
 }
 
-int iothdns_getaddrinfo(struct iothdns *iothdns, 
+int iothdns_getaddrinfo(struct iothdns *iothdns,
 		const char *node, const char *service,
 		const struct addrinfo *hints,
 		struct addrinfo **res) {
@@ -178,7 +179,7 @@ int iothdns_getaddrinfo(struct iothdns *iothdns,
 		return EAI_NONAME;
 	if (hints == NULL)
 		hints = &default_hints;
-	/* PHASE 1: get the port # and socktype availability */ 
+	/* PHASE 1: get the port # and socktype availability */
 	struct ioth_gaiport gaiport[] = {
 		{SOCK_STREAM, "tcp", 0},
 		{SOCK_DGRAM, "udp", 0},
@@ -205,9 +206,12 @@ int iothdns_getaddrinfo(struct iothdns *iothdns,
 					gaiport[i].port = port;
 		} else if ((hints->ai_flags & AI_NUMERICSERV) == 0){
 			/* search in "services" file */
-			for (int i = 0; gaiport[i].socktype != 0; i++)
-				if (gaiport[i].port == 0)
-					gaiport[i].port = iothdns_getservice("/etc/services" /*XXX*/, service, gaiport[i].protocol);
+			char services_path[PATH_MAX];
+			if (iothdns_getpath(iothdns, IOTHDNS_SERVICES, services_path, PATH_MAX) > 0) {
+				for (int i = 0; gaiport[i].socktype != 0; i++)
+					if (gaiport[i].port == 0)
+						gaiport[i].port = iothdns_getservice(services_path, service, gaiport[i].protocol);
+			}
 		}
 	}
 
@@ -237,18 +241,21 @@ int iothdns_getaddrinfo(struct iothdns *iothdns,
 		if (hints->ai_flags & AI_CANONNAME)
 			iothdns_lookup_cb(iothdns, (char *) node, IOTHDNS_TYPE_CNAME,
 					lookup_cb_cname, &gaidata);
-		/* search in th e "hosts" file */
-		if (ioth_af_ok(hints, AF_INET)) {
-			if (iothdns_gethost("/etc/hosts" /*XXX*/, AF_INET, node, buf))
-				ioth_gaiaddport(&gaidata, AF_INET, buf);
-		}
-		if (ioth_af_ok(hints, AF_INET6)) {
-			if (iothdns_gethost("/etc/hosts" /*XXX*/, AF_INET6, node, buf))
-				ioth_gaiaddport(&gaidata, AF_INET6, buf);
+		/* search in the "hosts" file */
+		char hosts_path[PATH_MAX];
+		if (iothdns_getpath(iothdns, IOTHDNS_HOSTS, hosts_path, PATH_MAX) > 0) {
+			if (ioth_af_ok(hints, AF_INET)) {
+				if (iothdns_gethost(hosts_path, AF_INET, node, buf))
+					ioth_gaiaddport(&gaidata, AF_INET, buf);
+			}
+			if (ioth_af_ok(hints, AF_INET6)) {
+				if (iothdns_gethost(hosts_path, AF_INET6, node, buf))
+					ioth_gaiaddport(&gaidata, AF_INET6, buf);
+			}
 		}
 		if (*res == NULL) {
 			/* search in the DNS */
-			if (hints->ai_family == AF_INET6 && 
+			if (hints->ai_family == AF_INET6 &&
 					(hints->ai_flags & AI_V4MAPPED) && !(hints->ai_flags & AI_ALL)) {
 				/* if no matching IPv6 addresses could be found, then return IPv4-mapped IPv6 addresses */
 				/* AI_ALL is ignored if AI_V4MAPPED is not also specified */
@@ -336,18 +343,24 @@ int iothdns_getnameinfo(struct iothdns *iothdns,
 	}
 	/* get service name if required */
 	if (serv != NULL && servlen > 0) {
-		socklen_t rv = iothdns_getservice_rev("/etc/services" /*XXX*/, port, 
-				(flags & NI_DGRAM) ? "udp": "tcp",
-				serv, servlen, flags & NI_NUMERICSERV);
-		if (rv >= servlen) return EAI_OVERFLOW;
+		char services_path[PATH_MAX];
+		if (iothdns_getpath(iothdns, IOTHDNS_SERVICES, services_path, PATH_MAX) > 0) {
+			socklen_t rv = iothdns_getservice_rev(services_path, port,
+					(flags & NI_DGRAM) ? "udp": "tcp",
+					serv, servlen, flags & NI_NUMERICSERV);
+			if (rv >= servlen) return EAI_OVERFLOW;
+		}
 	}
 	/* get host name if required */
 	if (host != NULL && hostlen > 0) {
 		socklen_t rv = 0;
 		if (! flags & NI_NUMERICHOST) {
 			/* try via the "hosts" file */
-			rv = iothdns_gethost_rev("/etc/hosts" /*XXX*/, af, addrx, host, hostlen);
-			if (rv >= hostlen) return EAI_OVERFLOW;
+			char hosts_path[PATH_MAX];
+			if (iothdns_getpath(iothdns, IOTHDNS_HOSTS, hosts_path, PATH_MAX) > 0) {
+				rv = iothdns_gethost_rev(hosts_path, af, addrx, host, hostlen);
+				if (rv >= hostlen) return EAI_OVERFLOW;
+			}
 			if (rv == 0) {
 				/* try via DNS */
 				rv = ioth_dns_rev(iothdns, af, addrx, host, hostlen);

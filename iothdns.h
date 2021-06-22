@@ -19,6 +19,12 @@ struct iothdns *iothdns_init_strcfg(struct ioth *stack, char *config);
 int iothdns_update(struct iothdns *iothdns, char *path_config);
 int iothdns_update_strcfg(struct iothdns *iothdns, char *config);
 
+enum iothdns_pathtag {IOTHDNS_HOSTS, IOTHDNS_SERVICES, // real tags
+	IOTHDNS_PATH_SIZE}; // count of enum elements
+
+void iothdns_setpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *newvalue);
+int iothdns_getpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *buf, size_t size);
+
 void iothdns_fini(struct iothdns *iothdns);
 
 /* --------------- client side ----------------- */
