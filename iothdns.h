@@ -43,7 +43,7 @@ int iothdns_getaddrinfo(struct iothdns *iothdns,
 
 void iothdns_freeaddrinfo(struct addrinfo *res);
 
-const char *ioth_gai_strerror(int errcode);
+const char *iothdns_gai_strerror(int errcode);
 
 /* iothdns getnameinfo (see getnameinfo(3)) */
 int iothdns_getnameinfo(struct iothdns *iothdns,
