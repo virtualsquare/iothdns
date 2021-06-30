@@ -3,7 +3,7 @@
 #include <arpa/inet.h>
 #include <iothdns.h>
 
-int any_cb (int section, struct iothdns_rr *rr, void *arg) {
+int any_cb (int section, struct iothdns_rr *rr, struct iothdns_pkt *vpkt, void *arg) {
 	printf("section %d qtype %d %s\n", section, rr->type, rr->name);
 	return 0;
 }
