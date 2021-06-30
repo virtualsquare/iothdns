@@ -107,11 +107,11 @@ void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 uint8_t iothdns_get_int8(struct iothdns_pkt *vpkt);
 uint16_t iothdns_get_int16(struct iothdns_pkt *vpkt);
 uint32_t iothdns_get_int32(struct iothdns_pkt *vpkt);
-void iothdns_get_data(struct iothdns_pkt *vpkt, void *data, uint16_t len);
+void *iothdns_get_data(struct iothdns_pkt *vpkt, void *data, uint16_t len);
 char *iothdns_get_name(struct iothdns_pkt *vpkt, char *name);
 char *iothdns_get_string(struct iothdns_pkt *vpkt, char *name);
-void iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
-void iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
+void *iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
+void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 
 /* MACRO & CONSTANTS */
 

@@ -161,9 +161,10 @@ uint32_t iothdns_get_int32(struct iothdns_pkt *vpkt) {
 		(iothdns_get_int8(vpkt) << 8) | iothdns_get_int8(vpkt);
 }
 
-void iothdns_get_data(struct iothdns_pkt *vpkt, void *data, uint16_t len) {
+void *iothdns_get_data(struct iothdns_pkt *vpkt, void *data, uint16_t len) {
 	size_t retval = fread(data, len, 1, vpkt->f);
 	(void) retval;
+	return data;
 }
 
 char *iothdns_get_name(struct iothdns_pkt *vpkt, char *name) {
@@ -212,12 +213,14 @@ char *iothdns_get_string(struct iothdns_pkt *vpkt, char *name) {
 	return name;
 }
 
-void iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4) {
+void *iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4) {
 	iothdns_get_data(vpkt, addr_ipv4, 4);
+	return addr_ipv4;
 }
 
-void iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
+void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
 	iothdns_get_data(vpkt, addr_ipv6, 16);
+	return addr_ipv6;
 }
 
 struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size_t size, char *qnamebuf) {
