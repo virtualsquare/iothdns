@@ -39,8 +39,8 @@ struct iothdns {
 };
 
 static char *iothdns_default_paths[IOTHDNS_PATH_SIZE] = {
-	"/etc/hosts",
-	"/etc/services"
+	IOTHDNS_DEFAULT_HOSTS,
+	IOTHDNS_DEFAULT_SERVICES
 };
 
 /* common function to initialize/update iothdns */

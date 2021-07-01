@@ -6,18 +6,29 @@
 #include <netdb.h>
 #include <ioth.h>
 
+#define IOTHDNS_DEFAULT_PORT 53
 #define IOTHDNS_MAXNS 3
 #define IOTHDNS_TIMEOUT_MS 1000
 #define IOTHDNS_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
-#define IOTHDNS_DEFAULT_PORT 53
+#define IOTHDNS_DEFAULT_HOSTS       "/etc/hosts"
+#define IOTHDNS_DEFAULT_SERVICES    "/etc/services"
 
 struct iothdns;
 struct iothdns_pkt;
+
 /* init/update configuration */
+/* configure the resolver: NS addresses and search path.
+ * the configuration file (iothdns_init/iothdns_update)
+ * or string (iothdns_init_strcfg, iothdns_update_strcfg)
+ * follow the syntax of resolv.conf(5) */
+
 struct iothdns *iothdns_init(struct ioth *stack, char *path_config);
 struct iothdns *iothdns_init_strcfg(struct ioth *stack, char *config);
 int iothdns_update(struct iothdns *iothdns, char *path_config);
 int iothdns_update_strcfg(struct iothdns *iothdns, char *config);
+
+/* provide alternative files to "/etc/hosts" or "/etc/services" for
+ * iothdns_getaddrinfo and iothdns_getnameinfo */
 
 enum iothdns_pathtag {IOTHDNS_HOSTS, IOTHDNS_SERVICES, // real tags
 	IOTHDNS_PATH_SIZE}; // count of enum elements
@@ -63,8 +74,17 @@ int iothdns_lookup_cb_tcp(struct iothdns *iothdns, const char *name, int qtype,
 /* --------------- server side ----------------- */
 
 struct iothdns_header;
+/* this callback gets called once for each query.
+ * It returns the iothdns_pkt to be sent back as the reply */
 typedef struct iothdns_pkt *parse_request_t(struct iothdns_header *h, void *arg);
+
+/* fd is a UDP (SOCK_DGRAM) socket: read from the socket parse the request,
+ * call the callback for each query, send back the reply.
+ * arg is an opaque argument passed as is to the callback function */
 int iothdns_udp_process_request(int fd, parse_request_t *parse_request, void *arg);
+
+/* it is like the previous function except that fd is a TCP (SOCK_STREAM) socket.
+ * (each messsage -- query or reply -- has a prepending length field. */
 int iothdns_tcp_process_request(int fd, parse_request_t *parse_request, void *arg);
 
 /* --------------- packet compose/parse ----------------- */
@@ -85,15 +105,18 @@ struct iothdns_rr {
 	uint16_t rdlength;
 };
 
+/* COMPOSE MODE */
+/* iothdns_put_header creates a iothdns_pkt including the header and the
+ * query resource record */
 struct iothdns_pkt *iothdns_put_header(struct iothdns_header *h);
+
+/* iothdns_put_rr adds a resource record */
+/* WARNING: RRs must be added in non-decreasing sorting of section.
+ * a RR whose section is smaller than the section of the previous RR is silently discarded */
+/* rdlength is automatically computed */
 void iothdns_put_rr(int section, struct iothdns_pkt *vpkt, struct iothdns_rr *rr);
-struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size_t size, char *qnamebuf);
-int iothdns_get_rr(struct iothdns_pkt *vpkt, struct iothdns_rr *rr, char *namebuf);
 
-void *iothdns_buf(struct iothdns_pkt *vpkt);
-size_t iothdns_buflen(struct iothdns_pkt *vpkt);
-void iothdns_free(struct iothdns_pkt *vpkt);
-
+/* add data to the last resource record */
 void iothdns_put_int8(struct iothdns_pkt *vpkt, uint8_t data);
 void iothdns_put_int16(struct iothdns_pkt *vpkt, uint16_t data);
 void iothdns_put_int32(struct iothdns_pkt *vpkt, uint32_t data);
@@ -104,6 +127,18 @@ void iothdns_put_string(struct iothdns_pkt *vpkt, char *string);
 void iothdns_put_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
 void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 
+/* PARSE MODE */
+/* iothdns_get_header parses the header and the query of the packed stored in buf.
+ * qnamebuf is a temporary buffer (whose length is IOTHDNS_MAXNAME) to store the queryname */
+struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size_t bufsize, char *qnamebuf);
+
+/* iothdns_get_rr parses the next resource record */
+/* namebuf is a temporary buffer (whose length is IOTHDNS_MAXNAME) to store the name of this RR */
+/* It is not necessary to parse the arguments of the current RR.
+ * Just call again iothdns_get_rr again if the arguments are not significant/needed. */
+int iothdns_get_rr(struct iothdns_pkt *vpkt, struct iothdns_rr *rr, char *namebuf);
+
+/* parse argument data of the current resource record */
 uint8_t iothdns_get_int8(struct iothdns_pkt *vpkt);
 uint16_t iothdns_get_int16(struct iothdns_pkt *vpkt);
 uint32_t iothdns_get_int32(struct iothdns_pkt *vpkt);
@@ -112,6 +147,16 @@ char *iothdns_get_name(struct iothdns_pkt *vpkt, char *name);
 char *iothdns_get_string(struct iothdns_pkt *vpkt, char *name);
 void *iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
 void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
+
+
+/* BOTH SOMPOSE/PARSE MODES */
+
+/* iothdns_buf retrurns the address of the packet buffer of vpkt*/
+void *iothdns_buf(struct iothdns_pkt *vpkt);
+/* iothdns_buflen retruns the length of iothdns_buf */
+size_t iothdns_buflen(struct iothdns_pkt *vpkt);
+/* delete vpkt and free all the dynamically allocated memory */
+void iothdns_free(struct iothdns_pkt *vpkt);
 
 /* MACRO & CONSTANTS */
 
