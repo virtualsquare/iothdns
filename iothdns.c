@@ -304,7 +304,7 @@ static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 		uint8_t *outbuf, size_t outbuflen) {
 	struct iothdns_pkt *retval;
 	pthread_mutex_lock(&iothdns->mutex);
-	if (strchr(name, '.') == NULL && iothdns->search != NULL) {
+	if (*name != '\0' && strchr(name, '.') == NULL && iothdns->search != NULL) {
 		char qname[IOTHDNS_MAXNAME];	
 		retval = NULL;
 		for (char *scan = iothdns->search; 

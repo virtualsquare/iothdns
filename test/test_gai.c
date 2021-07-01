@@ -21,8 +21,23 @@ static char *sst(int socktype) {
 }
 
 static void usage(char *progname) {
-	fprintf(stderr, "Usage: options host port\n", progname);
-    exit(EXIT_FAILURE);
+	fprintf(stderr, "Usage: %s [options] host port\n"
+			"\t-r --rev\n"
+			"\t-R resolvconf_file     --resolvconf resolvconf_file\n"
+			"\t-x --native\n"
+			"\t-4 --ipv4\n"
+			"\t-6 --ipv6\n"
+			"\t-d --dgram\n"
+			"\t-s --stream\n"
+			"\t-m --v4mapped\n"
+			"\t-a --all\n"
+			"\t-p --passive\n"
+			"\t-c --canonname\n"
+			"\t-n --numerichost\n"
+			"\t-N --numericserv\n"
+			"\t-e --errnoname\n"
+			, progname);
+	exit(EXIT_FAILURE);
 }
 
 	int
@@ -138,11 +153,7 @@ main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		/* getaddrinfo() returns a list of address structures.
-			 Try each address until we successfully connect(2).
-			 If socket(2) (or connect(2)) fails, we (close the socket
-			 and) try the next address. */
-
+		/* getaddrinfo() returns a list of address structures. */
 		for (rp = result; rp != NULL; rp = rp->ai_next) {
 			char str[INET6_ADDRSTRLEN];
 			struct sockaddr_in *s4 = (void *) rp->ai_addr;

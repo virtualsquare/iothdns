@@ -149,7 +149,7 @@ void *iothdns_get_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
 void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 
 
-/* BOTH SOMPOSE/PARSE MODES */
+/* BOTH COMPOSE/PARSE MODES */
 
 /* iothdns_buf retrurns the address of the packet buffer of vpkt*/
 void *iothdns_buf(struct iothdns_pkt *vpkt);
