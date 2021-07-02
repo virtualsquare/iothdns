@@ -111,7 +111,7 @@ struct iothdns_rr {
 struct iothdns_pkt *iothdns_put_header(struct iothdns_header *h);
 
 /* iothdns_put_rr adds a resource record */
-/* WARNING: RRs must be added in non-decreasing sorting of section.
+/* WARNING: RRs must be added in non-decreasing sorting of sections.
  * a RR whose section is smaller than the section of the previous RR is silently discarded */
 /* rdlength is automatically computed */
 void iothdns_put_rr(int section, struct iothdns_pkt *vpkt, struct iothdns_rr *rr);

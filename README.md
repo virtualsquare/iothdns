@@ -47,7 +47,7 @@ void iothdns_fini(struct iothdns *iothdns);
 ```
 
 (`iothdns_init` uses `/etc/resolv.conf` if  `path_config` is NULL).
-`iothdns_init` and `iothdns_init_strcfg` return a _iothdns descriptor_ used in many function of this API.
+`iothdns_init` and `iothdns_init_strcfg` return a _iothdns descriptor_ used in many functions of this API.
 In case of error `NULL` is returned and `errno` provides a description of the error.
 
 `iothdns_fini` closes the _iothdns descriptor_ and deallocates its data structures.
@@ -61,37 +61,37 @@ void iothdns_setpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char
 int iothdns_getpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *buf, size_t size);
 ```
 
-The domain name resolution functions provided by the C library use some system provided files like `/etc/hosts` and `/etc/services`. `iothdns` allows users to redefine files to be used instead of the system provided ones.
+The domain name resolution functions provided by the C library use some system provided files like `/etc/hosts` and `/etc/services`. `iothdns_setpath` allows users to redefine files to be used instead of the system provided ones.
 
 ### ioth configuration examples
 
-#### define `dd` to use the kernel stack and /etc/resolv.conf
+#### define the _iothdns descriptor_ `idd` to use the kernel stack and /etc/resolv.conf
 ```C
 #include <iothdns.h>
-struct iothdns *dd = iothdns_init(NULL, NULL);
+struct iothdns *idd = iothdns_init(NULL, NULL);
 ...
-iothdns_fini(dd);
+iothdns_fini(idd);
 ```
-#### define `dd` to use the kernel stack but a different configuration provided as a string
+#### define `idd` to use the kernel stack but a different configuration provided as a string
 ```C
 #include <iothdns.h>
-struct iothdns *dd = iothdns_init_strcfg(NULL,
+struct iothdns *idd = iothdns_init_strcfg(NULL,
   "search my.domain.org\n"
   "nameserver 80.80.80.80");
 ...
-iothdns_fini(dd);
+iothdns_fini(idd);
 ```
 
-#### `dd` uses a `vdestack` user level stack, whose virtual interface `vde0` is connected to the VDE net `vxvde://234.0.0.1`.&nbsp;&nbsp; `vde0`'s IP address is 10.0.0.53/24, default gateway is 10.0.0.1. DNS is 1.1.1.1 (this example needs [`iothconf`](https://github.com/virtualsquare/iothconf))
+#### `idd` uses a `vdestack` user level stack, whose virtual interface `vde0` is connected to the VDE net `vxvde://234.0.0.1`.&nbsp;&nbsp; `vde0`'s IP address is 10.0.0.53/24, default gateway is 10.0.0.1. DNS is 1.1.1.1 (this example needs [`iothconf`](https://github.com/virtualsquare/iothconf))
 ```C
 #include <ioth.h>
 #include <iothconf.h>
 #include <iothdns.h>
 struct ioth *stack = ioth_newstack("vdestack", "vxvde://234.0.0.1");
 ioth_config(stack, "eth,ip=10.0.0.53/24,gw=10.0.0.1");
-struct iothdns *dd = iothdns_init_strcfg(stack, "nameserver 1.1.1.1");
+struct iothdns *idd = iothdns_init_strcfg(stack, "nameserver 1.1.1.1");
 ...
-iothdns_fini(dd);
+iothdns_fini(idd);
 ```
 #### user provided hosts/services files
 ```C
@@ -119,7 +119,7 @@ int iothdns_getnameinfo(struct iothdns *iothdns,
     char *host, socklen_t hostlen,
     char *serv, socklen_t servlen, int flags);
 ```
-Note: the implementation supports the most common usages, not all the special cases of `getaddrinfo(3)` and `getnameinfo(3)` are supported yet.
+Note: the implementation provides a support for the most common uses, not all the special cases of `getaddrinfo(3)` and `getnameinfo(3)` are supported yet.
 
 ### mid level API: client queries
 
@@ -177,7 +177,7 @@ int iothdns_tcp_process_request(int fd, parse_request_t *parse_request, void *ar
 ```
 
 `iothdns_udp_process_request` and `iothdns_tcp_process_request` read the data available on the
-socket `fd` and call the callback `parse_request` for each query, then it send back the reply.
+socket `fd` and call the callback `parse_request` for each query, then they send back the reply.
 The callback argument `h` includes all the data from the DNS query header and question section.
 The return value  of `parse_request` is the message to be sent back as the reply, this message is created
 using the packet composing `iothdns_put...` functions (see below).
@@ -221,7 +221,9 @@ void iothdns_free(struct iothdns_pkt *vpkt);
 ```
 
 `iothdns_put_header` creates a message containing the header and the question section from the fields of `h`.
-It returns a handler that can be used to add all the other RRs (`iothdns_put_rr`) and the resource records' arguments (by the other `iothdns_put...`functions).
+It returns a handler that can be used to add all the other RRs (`iothdns_put_rr`) and the resource records' arguments (by the other `iothdns_put...`functions).  Warning: RRs must be added in non-decreasing sorting of sections.
+A RR whose section is smaller than the section of the previous RR is silently discarded.
+
 The length of the entire message as well as the length of each resource record are automatically computed and inserted in the correspodnent fields of the message. Moreover all the names added by `iothdns_put_header`, `iothdns_put_rr` and `iothdns_put_name` are automatically compressed using the method defined RFC1035, section 4.1.4.
 The functions `iothdns_buf` and `iothdns_buflen` have been designed to be used in functions like `send(2)`, `sendto(2)` or `write(2)` to send the composed message to the other end (to the server if it is a query, to the client if it is a reply).
 
