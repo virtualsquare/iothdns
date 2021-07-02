@@ -11,6 +11,7 @@
 #include <iothdns.h>
 
 struct iothdns_pkt *parse_pkt(struct iothdns_header *h, void *arg) {
+	(void) arg;
 	struct iothdns_pkt *pkt;
 	if (strcmp(h->qname, "test.fake") == 0) {
 		struct iothdns_rr rr = {h->qname, 1, 1, 600, 0};
@@ -29,6 +30,8 @@ struct iothdns_pkt *parse_pkt(struct iothdns_header *h, void *arg) {
 }
 
 int main(int argc, char *argv[]) {
+	(void) argc;
+	(void) argv;
 	struct sockaddr_in sserv = {.sin_family = AF_INET, .sin_addr.s_addr = INADDR_ANY, .sin_port = htons(53)};
 	int s = ioth_msocket(NULL, AF_INET, SOCK_DGRAM, 0);
 	ioth_bind(s, (struct sockaddr *)&sserv, sizeof(sserv));

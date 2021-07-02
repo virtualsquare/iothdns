@@ -5,6 +5,7 @@
 #include <iothdns.h>
 
 int any_cb (int section, struct iothdns_rr *rr, struct iothdns_pkt *vpkt, void *arg) {
+	(void) arg;
 	char buf[IOTHDNS_MAXNAME];
 	printf("section %d qtype %d %s\n", section, rr->type, rr->name);
 	switch (rr->type) {
