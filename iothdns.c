@@ -347,45 +347,58 @@ static struct iothdns_pkt *iothdns_tcp_lookup(struct iothdns *iothdns,
 			name, type, outbuf, outbuflen);
 }
 
+/* helper function to support numeric a/aaaa queries via inet_pton */
+static int iothdns_lookup_pton(int af, const char *src, void *dst, int n) {
+	if (n == 0) {
+		uint8_t tmpbuf[sizeof(struct in6_addr)];
+		return inet_pton(af, src, tmpbuf);
+	} else
+		return inet_pton(af, src, dst);
+}
+
 /* lookup IPv4 addresses */
 int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n) {
-	int retval = 0;
-	uint8_t buf[IOTHDNS_UDP_MAXBUF];
-	struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_A, buf, IOTHDNS_UDP_MAXBUF);
-	struct iothdns_rr rr;
-	char rname[IOTHDNS_MAXNAME];
-	int section;
-	if (pkt == NULL)
-		return -1;
-	while ((section = iothdns_get_rr(pkt, &rr, rname)) != 0) {
-		if (section == IOTHDNS_SEC_ANSWER && rr.type == IOTHDNS_TYPE_A) {
-			if (retval < n)
-				iothdns_get_a(pkt, a + retval);
-			retval++;
+	int retval = iothdns_lookup_pton(AF_INET, name, a, n);
+	if (retval == 0) {
+		uint8_t buf[IOTHDNS_UDP_MAXBUF];
+		struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_A, buf, IOTHDNS_UDP_MAXBUF);
+		struct iothdns_rr rr;
+		char rname[IOTHDNS_MAXNAME];
+		int section;
+		if (pkt == NULL)
+			return -1;
+		while ((section = iothdns_get_rr(pkt, &rr, rname)) != 0) {
+			if (section == IOTHDNS_SEC_ANSWER && rr.type == IOTHDNS_TYPE_A) {
+				if (retval < n)
+					iothdns_get_a(pkt, a + retval);
+				retval++;
+			}
 		}
+		iothdns_free(pkt);
 	}
-	iothdns_free(pkt);
 	return retval;
 }
 
 /* lookup IPv6 addresses */
 int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n) {
-	int retval = 0;
-	uint8_t buf[IOTHDNS_UDP_MAXBUF];
-	struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_AAAA, buf, IOTHDNS_UDP_MAXBUF);
-	struct iothdns_rr rr;
-	char rname[IOTHDNS_MAXNAME];
-	int section;
-	if (pkt == NULL)
-		return -1;
-	while ((section = iothdns_get_rr(pkt, &rr, rname)) != 0) {
-		if (section == IOTHDNS_SEC_ANSWER && rr.type == IOTHDNS_TYPE_AAAA) {
-			if (retval < n)
-				iothdns_get_aaaa(pkt, aaaa + retval);
-			retval++;
+	int retval = iothdns_lookup_pton(AF_INET6, name, aaaa, n);
+	if (retval == 0) {
+		uint8_t buf[IOTHDNS_UDP_MAXBUF];
+		struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_AAAA, buf, IOTHDNS_UDP_MAXBUF);
+		struct iothdns_rr rr;
+		char rname[IOTHDNS_MAXNAME];
+		int section;
+		if (pkt == NULL)
+			return -1;
+		while ((section = iothdns_get_rr(pkt, &rr, rname)) != 0) {
+			if (section == IOTHDNS_SEC_ANSWER && rr.type == IOTHDNS_TYPE_AAAA) {
+				if (retval < n)
+					iothdns_get_aaaa(pkt, aaaa + retval);
+				retval++;
+			}
 		}
+		iothdns_free(pkt);
 	}
-	iothdns_free(pkt);
 	return retval;
 }
 
