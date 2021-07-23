@@ -94,7 +94,7 @@ static unsigned int lname2dns(char *name, char *out, struct name_compr *compr_he
 	 host.domain.org. -> \004host\006domain\003org\000.
 	 conversion is correct whether or not there is the final dot.
 	 returns the length in byte of the converted string */
-/* out must have at least the same size of name (i.e. strlen(name) + 1 */
+/* out must have at least the same size of name, i.e. strlen(name) + 1 */
 unsigned int name2dns(const char *name, char *out, short pos, struct name_compr **compr_head) {
 	int namelen = strlen(name);
 	if (namelen == 0)
