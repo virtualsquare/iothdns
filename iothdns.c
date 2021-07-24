@@ -359,7 +359,8 @@ static int iothdns_lookup_pton(int af, const char *src, void *dst, int n) {
 /* lookup IPv4 addresses */
 int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n) {
 	int retval = iothdns_lookup_pton(AF_INET, name, a, n);
-	if (retval == 0) {
+	// query the dns only when it is not a numerical address v4 or v6
+	if (retval == 0 && iothdns_lookup_pton(AF_INET6, name, NULL, 0) == 0) {
 		uint8_t buf[IOTHDNS_UDP_MAXBUF];
 		struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_A, buf, IOTHDNS_UDP_MAXBUF);
 		struct iothdns_rr rr;
@@ -382,7 +383,8 @@ int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *
 /* lookup IPv6 addresses */
 int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n) {
 	int retval = iothdns_lookup_pton(AF_INET6, name, aaaa, n);
-	if (retval == 0) {
+	// query the dns only when it is not a numerical address v4 or v6
+	if (retval == 0 && iothdns_lookup_pton(AF_INET, name, NULL, 0) == 0) {
 		uint8_t buf[IOTHDNS_UDP_MAXBUF];
 		struct iothdns_pkt *pkt = iothdns_udp_lookup(iothdns, name, IOTHDNS_TYPE_AAAA, buf, IOTHDNS_UDP_MAXBUF);
 		struct iothdns_rr rr;
