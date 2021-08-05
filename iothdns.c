@@ -118,7 +118,7 @@ static struct iothdns *_iothdns_init_f(struct iothdns *iothdns, struct ioth *sta
 
 
 /* helper functions to handle file or string configuration */
-static struct iothdns *iothdns_init_update(struct iothdns *iothdns, 
+static struct iothdns *iothdns_init_update(struct iothdns *iothdns,
 		struct ioth *stack, char *path_config) {
 	char *path = (path_config == NULL) ? IOTHDNS_DEFAULT_RESOLV_CONF : path_config;
 	FILE *f = fopen(path, "r");
@@ -307,7 +307,7 @@ static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 	if (*name != '\0' && strchr(name, '.') == NULL && iothdns->search != NULL) {
 		char qname[IOTHDNS_MAXNAME];	
 		retval = NULL;
-		for (char *scan = iothdns->search; 
+		for (char *scan = iothdns->search;
 				*scan != '\0' && retval == NULL; scan++) {
 			if (*scan == ' ') continue;
 			int len = strchrnul(scan, ' ') - scan;

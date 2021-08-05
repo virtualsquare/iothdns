@@ -157,7 +157,7 @@ uint16_t iothdns_get_int16(struct iothdns_pkt *vpkt) {
 }
 
 uint32_t iothdns_get_int32(struct iothdns_pkt *vpkt) {
-	return (iothdns_get_int8(vpkt) << 24) | (iothdns_get_int8(vpkt) << 16) | 
+	return (iothdns_get_int8(vpkt) << 24) | (iothdns_get_int8(vpkt) << 16) |
 		(iothdns_get_int8(vpkt) << 8) | iothdns_get_int8(vpkt);
 }
 
@@ -255,7 +255,7 @@ static int vdne_get_section(struct iothdns_pkt *vpkt) {
 		if (vpkt->count[section] > 0)
 			break;
 	}
-	if (section == IOTHDNS_SECTIONS) 
+	if (section == IOTHDNS_SECTIONS)
 		return 0;
 	else
 		return vpkt->count[section]--, section;
@@ -296,4 +296,13 @@ void iothdns_free(struct iothdns_pkt *vpkt) {
 		name_compr_free(vpkt->nc);
 	fclose(vpkt->f);
 	free(vpkt);
+}
+
+void iothdns_rewrite_header(void *buf, size_t bufsize, uint16_t id, uint16_t flags) {
+	FILE *f = fmemopen(buf, bufsize, "r+");
+	fputc(id >> 8, f);
+	fputc(id, f);
+	fputc(flags >> 8, f);
+	fputc(flags, f);
+	fclose(f);
 }

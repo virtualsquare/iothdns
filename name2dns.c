@@ -1,10 +1,10 @@
-/*   
- *   name_utils.c: name to string coversions 
+/*
+ *   name_utils.c: name to string coversions
  *   (as described in sections 3.1 and 4.1.4 of rfc 1035)
- *   
- *   Copyright 2017-2021 Renzo Davoli - Virtual Square Team 
+ *
+ *   Copyright 2017-2021 Renzo Davoli - Virtual Square Team
  *   University of Bologna - Italy
- *   
+ *
  *   This library is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU Lesser General Public License as published by
  *   the Free Software Foundation; either version 2.1 of the License, or (at
@@ -106,7 +106,7 @@ unsigned int name2dns(const char *name, char *out, short pos, struct name_compr 
 		sprintf(lname, "%*.*s", namelen, namelen, name);
 		if (compr_head) {
 			len = lname2dns(lname, out, *compr_head);
-			if ((out[0] & 0xc00) != 0xc00) 
+			if ((out[0] & 0xc00) != 0xc00)
 				name_compr_addname(compr_head, lname, namelen, pos);
 		} else
 			len = lname2dns(lname, out, NULL);

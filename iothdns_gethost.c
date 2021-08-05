@@ -53,12 +53,12 @@ static int hostparseline(char *s, struct hostparse *host) {
 }
 
 static int hostmatch(const char *hostname, char *s) {
-	size_t hostnamelen = strlen(hostname); 
+	size_t hostnamelen = strlen(hostname);
 	if (s == NULL) return 0;
 	while (*s != 0) {
 		s += strspn(s, BLANKS);
 		if (strchr(ALPHA DIGITS "-.", *s) == NULL) break;
-		if (strncmp(hostname, s, hostnamelen) == 0 && 
+		if (strncmp(hostname, s, hostnamelen) == 0 &&
 				(s[hostnamelen] == 0 || strchr(BLANKS, s[hostnamelen])))
 			return 1;
 		s += strspn(s, ALPHA DIGITS "-.");

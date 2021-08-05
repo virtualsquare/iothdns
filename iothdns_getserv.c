@@ -63,15 +63,15 @@ static int gsparseline(char *s, struct gsparse *gs) {
 }
 
 /* word matching:
- * s can contain multiple blank separated words 
+ * s can contain multiple blank separated words
  * gsmatch returns 1 id sample matches one of them. */
 static int gsmatch(const char *sample, char *s) {
-	size_t samplelen = strlen(sample); 
+	size_t samplelen = strlen(sample);
 	if (s == NULL) return 0;
 	while (*s != 0) {
 		s += strspn(s, BLANKS);
 		if (strchr(ALPHA DIGITS "-_", *s) == NULL) break;
-		if (strncmp(sample, s, samplelen) == 0 && 
+		if (strncmp(sample, s, samplelen) == 0 &&
 				(s[samplelen] == 0 || strchr(BLANKS, s[samplelen])))
 			return 1;
 		s += strspn(s, ALPHA DIGITS "-_");

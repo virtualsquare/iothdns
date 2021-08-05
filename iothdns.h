@@ -158,6 +158,10 @@ size_t iothdns_buflen(struct iothdns_pkt *vpkt);
 /* delete vpkt and free all the dynamically allocated memory */
 void iothdns_free(struct iothdns_pkt *vpkt);
 
+/* REWRITE HEADER */
+/* in place rewrite id and flags (for forwarders or non-caching proxies) */
+void iothdns_rewrite_header(void *buf, size_t bufsize, uint16_t id, uint16_t flags);
+
 /* MACRO & CONSTANTS */
 
 #define IOTHDNS_MAXNAME 256
