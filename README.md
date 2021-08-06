@@ -123,7 +123,7 @@ Note: the implementation provides a support for the most common uses, not all th
 
 ### mid level API: client queries
 
-`hashdns` provides some functions to query for IPv4 or IPv6 addresses.
+`iothdns` provides some functions to query for IPv4 or IPv6 addresses.
 
 ```C
 int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n);
@@ -234,7 +234,7 @@ The functions `iothdns_buf` and `iothdns_buflen` have been designed to be used i
 [`test_query.c`](https://raw.githubusercontent.com/virtualsquare/iothdns/master/test/test_query.c) is a simple example: it uses the networking stack of the kernel but it redefines the configuration data. It tests `iothdns_lookup_a`, `iothdns_lookup_aaaa` and `iothdns_lookup_cb_tcp`.
 
 ```sh
-$ gcc -o test_query test_query.c -lhashdns
+$ gcc -o test_query test_query.c -liothdns
 $ ./test_query mad.cs.unibo.it
 1 130.136.5.6
 1 2001:760:2e00:f005:226:b9ff:fe77:51b
