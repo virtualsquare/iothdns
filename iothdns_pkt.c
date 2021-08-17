@@ -23,7 +23,7 @@
 #include <name2dns.h>
 
 struct iothdns_pkt {
-	struct volstream *vols;
+	struct volstream *vols; // flag: != NULL if compose mode
 	FILE *f;
 	int count[IOTHDNS_SECTIONS];
 	union {
@@ -298,11 +298,16 @@ void iothdns_free(struct iothdns_pkt *vpkt) {
 	free(vpkt);
 }
 
-void iothdns_rewrite_header(void *buf, size_t bufsize, uint16_t id, uint16_t flags) {
-	FILE *f = fmemopen(buf, bufsize, "r+");
-	fputc(id >> 8, f);
-	fputc(id, f);
-	fputc(flags >> 8, f);
-	fputc(flags, f);
-	fclose(f);
+void iothdns_rewrite_header(struct iothdns_pkt *vpkt, uint16_t id, uint16_t flags) {
+	long pos = ftell(vpkt->f);
+	if (vpkt->vols == NULL) {
+		fclose(vpkt->f);
+		vpkt->f = fmemopen(vpkt->buf, vpkt->bufsize, "r+");
+		if (vpkt->f == NULL) return;
+	} else
+		fseek(vpkt->f, SEEK_SET, 0);
+	iothdns_put_int16(vpkt, id);
+	iothdns_put_int16(vpkt, flags);
+	fseek(vpkt->f, SEEK_SET, pos);
+	fflush(vpkt->f);
 }
