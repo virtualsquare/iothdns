@@ -298,6 +298,17 @@ void iothdns_free(struct iothdns_pkt *vpkt) {
 	free(vpkt);
 }
 
+void iothdns_retrieve_header(struct iothdns_pkt *vpkt, uint16_t *id, uint16_t *flags) {
+	uint16_t ___;
+	if (id == NULL) id = &___;
+	if (flags == NULL) flags = &___;
+	long pos = ftell(vpkt->f);
+	fseek(vpkt->f, SEEK_SET, 0);
+	*id = iothdns_get_int16(vpkt);
+	*flags = iothdns_get_int16(vpkt);
+	fseek(vpkt->f, SEEK_SET, pos);
+}
+
 void iothdns_rewrite_header(struct iothdns_pkt *vpkt, uint16_t id, uint16_t flags) {
 	long pos = ftell(vpkt->f);
 	if (vpkt->vols == NULL) {

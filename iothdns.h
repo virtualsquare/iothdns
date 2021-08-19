@@ -160,6 +160,7 @@ void iothdns_free(struct iothdns_pkt *vpkt);
 
 /* REWRITE HEADER */
 /* in place rewrite id and flags (for forwarders or non-caching proxies) */
+void iothdns_retrieve_header(struct iothdns_pkt *vpkt, uint16_t *id, uint16_t *flags);
 void iothdns_rewrite_header(struct iothdns_pkt *vpkt, uint16_t id, uint16_t flags);
 
 /* MACRO & CONSTANTS */
