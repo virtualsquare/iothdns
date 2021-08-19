@@ -30,10 +30,19 @@
 #include <pthread.h>
 #include <iothdns.h>
 
+/* sockaddr_storage wastes memory */
+#ifdef WASTE_MEMORY_FOR_SOCKADDR_SORAGE
+#define sockaddr_in46 sockaddr_storage
+#define sin46_family ss_family
+#else
+#define sockaddr_in46 sockaddr_in6
+#define sin46_family sin6_family
+#endif
+
 struct iothdns {
 	struct ioth *stack;
 	pthread_mutex_t mutex;
-	struct sockaddr_storage sockaddr[IOTHDNS_MAXNS];
+	struct sockaddr_in46 sockaddr[IOTHDNS_MAXNS];
 	char *search;
 	char *paths[IOTHDNS_PATH_SIZE];
 };
@@ -60,7 +69,7 @@ static struct iothdns *_iothdns_init_f(struct iothdns *iothdns, struct ioth *sta
 	} else {
 		pthread_mutex_lock(&iothdns->mutex);
 		for (int nsno = 0; nsno < IOTHDNS_MAXNS; nsno++)
-			iothdns->sockaddr[nsno].ss_family = PF_UNSPEC;
+			iothdns->sockaddr[nsno].sin46_family = PF_UNSPEC;
 		if (iothdns->search != NULL) {
 			free(iothdns->search);
 			iothdns->search = NULL;
@@ -190,18 +199,18 @@ void iothdns_fini(struct iothdns *iothdns) {
 /* dialog function prototype **for clients**
 	 dialog = open socket + connect + send + recv reply (or timeout) + close */
 typedef size_t dialog_function_t(struct ioth *stack,
-		const struct sockaddr_storage *addr,
+		const struct sockaddr_in46 *addr,
 		void *reqbuf, size_t reqbuflen,
 		void *repbuf, size_t repbuflen);
 
 /* UDP dialog */
 static size_t udp_client_dialog(struct ioth *stack,
-		const struct sockaddr_storage *addr,
+		const struct sockaddr_in46 *addr,
 		void *reqbuf, size_t reqbuflen,
 		void *repbuf, size_t repbuflen) {
-	int s = ioth_msocket(stack, addr->ss_family, SOCK_DGRAM, 0);
+	int s = ioth_msocket(stack, addr->sin46_family, SOCK_DGRAM, 0);
 	struct pollfd pfd[] = {{s, POLLIN, 0}};
-	ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_storage));
+	ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_in46));
 	ioth_write(s, reqbuf, reqbuflen);
 	if (poll(pfd, 1, IOTHDNS_TIMEOUT_MS) == 0) {
 		ioth_close(s);
@@ -243,13 +252,13 @@ static size_t tcp_get_pkt(int s,
 }
 
 static size_t tcp_client_dialog(struct ioth *stack,
-		const struct sockaddr_storage *addr,
+		const struct sockaddr_in46 *addr,
 		void *reqbuf, size_t reqbuflen,
 		void *repbuf, size_t repbuflen) {
-	int s = ioth_msocket(stack, addr->ss_family, SOCK_STREAM, 0);
+	int s = ioth_msocket(stack, addr->sin46_family, SOCK_STREAM, 0);
 	uint8_t tcpheader[2] = {reqbuflen >> 8, reqbuflen};
 	struct iovec iov_wr[] = {{tcpheader, sizeof(tcpheader)}, {reqbuf, reqbuflen}};
-	ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_storage));
+	ioth_connect(s, (struct sockaddr *) addr, sizeof(struct sockaddr_in46));
 	ioth_writev(s, iov_wr, 2);
 	size_t len = tcp_get_pkt(s, repbuf, repbuflen);
 	ioth_close(s);
@@ -265,8 +274,8 @@ static struct iothdns_pkt *__iothdns_lookup(struct iothdns *iothdns,
 	uint16_t id = random();
 	int dnsno;
 	for (dnsno = 0; dnsno < IOTHDNS_MAXNS; dnsno++) {
-		if (iothdns->sockaddr[dnsno].ss_family != 0) {
-			//printf("%d %d\n", dnsno, iothdns->sockaddr[dnsno].ss_family);
+		if (iothdns->sockaddr[dnsno].sin46_family != 0) {
+			//printf("%d %d\n", dnsno, iothdns->sockaddr[dnsno].sin46_family);
 			struct iothdns_header h = {id, IOTHDNS_QUERY | IOTHDNS_RD, name, type, IOTHDNS_CLASS_IN};
 			struct iothdns_pkt *pkt = iothdns_put_header(&h);
 			size_t len = dialog_function(iothdns->stack,
@@ -437,7 +446,7 @@ int iothdns_lookup_cb_tcp(struct iothdns *iothdns, const char *name, int qtype,
 int iothdns_udp_process_request(int fd,
 		parse_request_t *parse_request, void *arg) {
 	char buf[IOTHDNS_UDP_MAXBUF];
-	struct sockaddr_storage from;
+	struct sockaddr_in46 from;
 	socklen_t fromlen = sizeof(from);
 	size_t len = ioth_recvfrom(fd, buf, IOTHDNS_UDP_MAXBUF, 0, (struct sockaddr *) &from, &fromlen);
 	if (len <= 0)
