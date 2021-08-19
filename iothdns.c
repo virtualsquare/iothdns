@@ -120,11 +120,10 @@ static struct iothdns *_iothdns_init_f(struct iothdns *iothdns, struct ioth *sta
 		}
 		if (line != NULL)
 			free(line);
+		pthread_mutex_unlock(&iothdns->mutex);
 	}
-	pthread_mutex_unlock(&iothdns->mutex);
 	return iothdns;
 }
-
 
 /* helper functions to handle file or string configuration */
 static struct iothdns *iothdns_init_update(struct iothdns *iothdns,
