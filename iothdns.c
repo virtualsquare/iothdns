@@ -165,6 +165,36 @@ int iothdns_update_strcfg(struct iothdns *iothdns, char *config) {
 	return iothdns_init_update_strcfg(iothdns, NULL, config) == NULL ? -1 : 0;
 }
 
+int iothdns_add_nameserver(struct iothdns *iothdns, int af, void *in46_addr) {
+	int rv = 0;
+	int nsno = 0;
+	pthread_mutex_lock(&iothdns->mutex);
+	for (int nsno = 0; nsno < IOTHDNS_MAXNS; nsno++)
+		if (iothdns->sockaddr[nsno].sin46_family == PF_UNSPEC)
+			break;
+	if (nsno < IOTHDNS_MAXNS) {
+		if (af == AF_INET6) {
+			struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) (&iothdns->sockaddr[nsno]);
+			sin6->sin6_family = AF_INET6;
+			sin6->sin6_port = htons(IOTHDNS_DEFAULT_PORT);
+			sin6->sin6_addr = *((struct in6_addr *) in46_addr);
+		} else if (af == AF_INET) {
+			struct sockaddr_in *sin = (struct sockaddr_in *) (&iothdns->sockaddr[nsno]);
+			sin->sin_family = AF_INET;
+			sin->sin_port = htons(IOTHDNS_DEFAULT_PORT);
+			sin->sin_addr = *((struct in_addr *) in46_addr);
+		} else {
+			rv = -1;
+			errno = EAFNOSUPPORT;
+		}
+	} else {
+		rv = -1;
+		errno = ENOSPC;
+	}
+	pthread_mutex_unlock(&iothdns->mutex);
+	return rv;
+}
+
 void iothdns_setpath(struct iothdns *iothdns, enum iothdns_pathtag pathtag, char *newvalue) {
 	pthread_mutex_lock(&iothdns->mutex);
 	if (iothdns->paths[pathtag] != NULL) free(iothdns->paths[pathtag]);

@@ -27,6 +27,10 @@ struct iothdns *iothdns_init_strcfg(struct ioth *stack, char *config);
 int iothdns_update(struct iothdns *iothdns, char *path_config);
 int iothdns_update_strcfg(struct iothdns *iothdns, char *config);
 
+/* add a nameserver: af is the addr family AF_INET6 or AF_INET;
+ * the last arg is a pointer to struct in_addr or struct in6_addr. */
+int iothdns_add_nameserver(struct iothdns *iothdns, int af, void *in46_addr);
+
 /* provide alternative files to "/etc/hosts" or "/etc/services" for
  * iothdns_getaddrinfo and iothdns_getnameinfo */
 
