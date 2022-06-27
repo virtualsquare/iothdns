@@ -50,6 +50,9 @@ int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *
 /* lookup IPv6 addresses */
 int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
 
+/* lookup IPv6 addresses + IPv4 compat (e.g. ::ffff:1.2.3.4) */
+int iothdns_lookup_aaaa_compat(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
+
 /* iothdns getaddrinfo (see getaddrinfo(3)) */
 int iothdns_getaddrinfo(struct iothdns *iothdns,
 		const char *node, const char *service,

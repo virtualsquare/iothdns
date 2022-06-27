@@ -442,6 +442,27 @@ int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_ad
 	return retval;
 }
 
+/* lookup IPv6 addresses + IPv4 compat (e.g. ::ffff:1.2.3.4) */
+#define v4v6compat(X) \
+  (struct in6_addr) {.s6_addr32[2] = htonl(0xffff), .s6_addr32[3] = (X).s_addr}
+int iothdns_lookup_aaaa_compat(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n) {
+  int n6 = iothdns_lookup_aaaa(iothdns, name, aaaa, n);
+  if (n6 < 0)
+    return n6;
+  int nmax4 = n - n6;
+  if (nmax4 > 0) {
+    struct in_addr a4[nmax4];
+    int n4 = iothdns_lookup_a(iothdns, name, a4, nmax4);
+    if (n4 < 0)
+      return n6;
+    if (n4 < nmax4) nmax4 = n4;
+      for (int i = 0; i < nmax4; i++)
+        aaaa[n6 + i] = v4v6compat(a4[i]);
+    return n6 + n4;
+  } else
+    return n6 + iothdns_lookup_a(iothdns, name, NULL, 0);
+}
+
 static int _iothdns_lookup_cb(struct iothdns *iothdns, const char *name, int qtype,
 		lookup_cb_t *lookup_cb, void *arg,
 		iothdns_lookup_f_t *iothdns_lookup_f, size_t outbuflen) {

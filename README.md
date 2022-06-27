@@ -128,6 +128,7 @@ Note: the implementation provides a support for the most common uses, not all th
 ```C
 int iothdns_lookup_a(struct iothdns *iothdns, const char *name, struct in_addr *a, int n);
 int iothdns_lookup_aaaa(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
+int iothdns_lookup_aaaa_compat(struct iothdns *iothdns, const char *name, struct in6_addr *aaaa, int n);
 ```
 
 where `iothdns` is the _iothdns descriptor_, `name` is the name of the host to query for, `a` or `aaaa` is the pointer to a buffer for one more IP (v4 or v6) addresses, _n_ is the number of addresses that `a` or `aaaa` can  host.
@@ -136,6 +137,13 @@ The return value is:
  * __-1__: in case of error (e.g. `errno` is `ENOENT` in case of a non-existent name)
  * __0__: if the name is valid but there is not an IP address defined for it
  * __> 0__: the return value is the number of IP addresses defined for the queried name. the heading _n_ addresses are stored in the `a` or `aaaa` buffer (if the returned value is greater than `n` the remaining addresses are dropped).
+
+`iothdns_lookup_aaaa_compat` returns IPv6 and IPv4 (compat mode, e.g. ::ffff:1.2.3.4) addresses,
+IPv6 addresses first, and then IPv4 addresses.
+(if `n` is 1, it gets an IPv6 address, if any. Otherwise it returns an IPv4 address.)
+
+When `iothdns_lookup_*` functions get a numeric address no dns query is generated and the address is
+converted to `struct in_addr` or `struct in6_addr`.
 
 ### low level API: client side
 
