@@ -165,13 +165,15 @@ static struct iothdns *iothdns_init_update_strcfg(struct iothdns *iothdns,
 			_config = config;
 			_configlen = strlen(config);
 		}
+		struct iothdns *new = NULL;
 		FILE *f = fmemopen(_config, _configlen, "r");
 		if (f) {
-			struct iothdns *new = _iothdns_init_f(iothdns, stack, f);
+			new = _iothdns_init_f(iothdns, stack, f);
 			fclose(f);
-			return new;
-		} else
-			return NULL;
+		} 
+		if (_config != config)
+			free(_config);
+		return new;
 	}
 }
 
