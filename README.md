@@ -81,6 +81,13 @@ struct iothdns *idd = iothdns_init_strcfg(NULL,
 ...
 iothdns_fini(idd);
 ```
+#### define `idd` to use the kernel stack, simple string configuration (list of DNS IP addr)
+```C
+#include <iothdns.h>
+struct iothdns *idd = iothdns_init_strcfg(NULL, "8.8.8.8,80.80.80.80,2620:0:ccc::2");
+...
+iothdns_fini(idd);
+```
 
 #### `idd` uses a `vdestack` user level stack, whose virtual interface `vde0` is connected to the VDE net `vxvde://234.0.0.1`.&nbsp;&nbsp; `vde0`'s IP address is 10.0.0.53/24, default gateway is 10.0.0.1. DNS is 1.1.1.1 (this example needs [`iothconf`](https://github.com/virtualsquare/iothconf))
 ```C
