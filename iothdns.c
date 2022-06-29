@@ -53,10 +53,14 @@ static char *iothdns_default_paths[IOTHDNS_PATH_SIZE] = {
 };
 
 /* common function to initialize/update iothdns */
+#if 0
 #define NSTAG "nameserver"
 #define NSTAGLEN (sizeof(NSTAG) - 1)
 #define SEARCHTAG "search "
 #define SEARCHTAGLEN (sizeof(SEARCHTAG) - 1)
+#endif
+#define NSTAG "nameserver"
+#define SEARCHTAG "search"
 static struct iothdns *_iothdns_init_f(struct iothdns *iothdns, struct ioth *stack, FILE *fconfig) {
 	/* create a new iothdns (init) or clean previous configurations */
 	if (iothdns == NULL) {
@@ -79,43 +83,37 @@ static struct iothdns *_iothdns_init_f(struct iothdns *iothdns, struct ioth *sta
 		/* parse the resolv.conf syntax */
 		char *line = NULL;
 		size_t linelen = 0;
-		ssize_t len;
 		int nsno = 0;
-		while ((len = getline(&line, &linelen, fconfig)) >= 0) {
-			size_t thislinelen = strlen(line);
-			/* comment line */
-			if (line[0] == '#' || line[0] == ';')
-				continue;
-			/* strip traling '\n' */
-			if (line[thislinelen - 1] == '\n')
-				line[--thislinelen] = 0;
-			/* add a nameserver address up to IOTHDNS_MAXNS */
-			if (nsno < IOTHDNS_MAXNS && strncmp(line, NSTAG, NSTAGLEN) == 0) {
-				char straddr[len - NSTAGLEN];
-				if (sscanf(line + NSTAGLEN, "%s", straddr) == 1) {
+		while (getline(&line, &linelen, fconfig) >= 0) {
+			char *scan = line;
+			while (*scan && strchr("\t ", *scan)) scan++; //skip heading spaces
+			if (strchr("#\n", *scan)) continue; // comments and empty lines
+			size_t thislinelen = strlen(scan);
+			char optname[thislinelen];
+			char value[thislinelen];
+			if (sscanf (scan, "%[a-zA-Z0-9_] %[^\n]%*c", optname, value) > 0) {
+				if (strcmp(optname, NSTAG) == 0 && nsno < IOTHDNS_MAXNS) {
 					uint8_t addr[sizeof(struct in6_addr)];
-					if (inet_pton(AF_INET6, straddr, addr) == 1) {
-						struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) (&iothdns->sockaddr[nsno++]);
-						sin6->sin6_family = AF_INET6;
-						sin6->sin6_port = htons(IOTHDNS_DEFAULT_PORT);
-						sin6->sin6_addr = *((struct in6_addr *) addr);
-					}
-					if (inet_pton(AF_INET, straddr, addr) == 1) {
-						struct sockaddr_in *sin = (struct sockaddr_in *) (&iothdns->sockaddr[nsno++]);
-						sin->sin_family = AF_INET;
-						sin->sin_port = htons(IOTHDNS_DEFAULT_PORT);
-						sin->sin_addr = *((struct in_addr *) addr);
-					}
+          if (inet_pton(AF_INET6, value, addr) == 1) {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) (&iothdns->sockaddr[nsno++]);
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(IOTHDNS_DEFAULT_PORT);
+            sin6->sin6_addr = *((struct in6_addr *) addr);
+          }
+          if (inet_pton(AF_INET, value, addr) == 1) {
+            struct sockaddr_in *sin = (struct sockaddr_in *) (&iothdns->sockaddr[nsno++]);
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(IOTHDNS_DEFAULT_PORT);
+            sin->sin_addr = *((struct in_addr *) addr);
+          }
 				}
-			}
-			/* Search list for host-name lookup */
-			if (strncmp(line, SEARCHTAG, SEARCHTAGLEN) == 0) {
-				/* If there are multiple search directives, only the search list from the last instance is used */
-				if (iothdns->search != NULL) {
-					free(iothdns->search);
-					iothdns->search = NULL;
+				if (strcmp(optname, SEARCHTAG) == 0) {
+					if (iothdns->search != NULL) {
+						free(iothdns->search);
+						iothdns->search = NULL;
+					}
+					iothdns->search = strdup(value);
 				}
-				iothdns->search = strdup(line + SEARCHTAGLEN);
 			}
 		}
 		if (line != NULL)
@@ -354,8 +352,8 @@ static struct iothdns_pkt *_iothdns_lookup(struct iothdns *iothdns,
 			if (*scan == ' ') continue;
 			int len = strchrnul(scan, ' ') - scan;
 			snprintf(qname, IOTHDNS_MAXNAME, "%s.%.*s",
-					name, len, scan);
-			//printf("SEARCH! %s\n", qname);
+					name, scan[len - 1] == '.' ? len - 1 : len, scan); //delete trailing '.'
+			// printf("SEARCH! %s\n", qname);
 			retval = __iothdns_lookup(iothdns, dialog_function, qname, type,
 					outbuf, outbuflen);
 			scan += len - 1;
