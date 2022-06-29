@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
+#include <ctype.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -31,7 +32,7 @@
 #include <iothdns.h>
 
 /* sockaddr_storage wastes memory */
-#ifdef WASTE_MEMORY_FOR_SOCKADDR_SORAGE
+#ifdef WASTE_MEMORY_FOR_SOCKADDR_STORAGE
 #define sockaddr_in46 sockaddr_storage
 #define sin46_family ss_family
 #else
@@ -136,12 +137,35 @@ static struct iothdns *iothdns_init_update(struct iothdns *iothdns,
 		return NULL;
 }
 
+static int is_ip_sequence(const char *config) {
+	for (; *config; config++) {
+		if (! (isxdigit(*config) || strchr(".:,", *config)))
+			return 0;
+	}
+	return 1;
+}
+
 static struct iothdns *iothdns_init_update_strcfg(struct iothdns *iothdns,
 		struct ioth *stack, char *config) {
 	if (config == NULL)
 		return iothdns_init_update(iothdns, stack, NULL);
 	else {
-		FILE *f = fmemopen(config, strlen(config), "r");
+		char *_config;
+		size_t _configlen;
+		if (is_ip_sequence(config)) {
+			FILE *f = open_memstream(&_config, &_configlen);
+			if (f) {
+				char *str, *token, *saveptr;
+				for (str = config; (token = strtok_r(str, ",", &saveptr)) != NULL; str = NULL)
+					fprintf(f, "nameserver %s\n", token);
+				fclose(f);
+			} else
+				return NULL;
+		} else {
+			_config = config;
+			_configlen = strlen(config);
+		}
+		FILE *f = fmemopen(_config, _configlen, "r");
 		if (f) {
 			struct iothdns *new = _iothdns_init_f(iothdns, stack, f);
 			fclose(f);
