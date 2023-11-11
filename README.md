@@ -230,8 +230,7 @@ void iothdns_put_name_uncompressed(struct iothdns_pkt *vpkt, const char *name);
 void iothdns_put_string(struct iothdns_pkt *vpkt, char *string);
 void iothdns_put_a(struct iothdns_pkt *vpkt, void *addr_ipv4);
 void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
-void *iothdns_buf(struct iothdns_pkt *vpkt);
-size_t iothdns_buflen(struct iothdns_pkt *vpkt);
+struct iovec iothdns_getbuf(struct iothdns_pkt *vpkt);
 void iothdns_free(struct iothdns_pkt *vpkt);
 ```
 
@@ -240,7 +239,7 @@ It returns a handler that can be used to add all the other RRs (`iothdns_put_rr`
 A RR whose section is smaller than the section of the previous RR is silently discarded.
 
 The length of the entire message as well as the length of each resource record are automatically computed and inserted in the correspodnent fields of the message. Moreover all the names added by `iothdns_put_header`, `iothdns_put_rr` and `iothdns_put_name` are automatically compressed using the method defined RFC1035, section 4.1.4.
-The functions `iothdns_buf` and `iothdns_buflen` have been designed to be used in functions like `send(2)`, `sendto(2)` or `write(2)` to send the composed message to the other end (to the server if it is a query, to the client if it is a reply).
+The function `iothdns_getbuf` has been designed to be used in functions like `send(2)`, `sendto(2)`, `sendmsg(2)`, `write(2)` or `writev(2)` to send the composed message to the other end (to the server if it is a query, to the client if it is a reply).
 
 ## Some tutorial examples
 

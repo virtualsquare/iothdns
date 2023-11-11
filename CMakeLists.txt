@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project("libiothdns"
 		DESCRIPTION "dns"
 		HOMEPAGE_URL "https://github.com/rd235/libiothdns"
-    VERSION 0.1.1
+    VERSION 0.1.2
     LANGUAGES C)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")

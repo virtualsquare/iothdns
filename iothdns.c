@@ -1,7 +1,7 @@
 /*
  *   iothdns.c: client and server utility functions for dns packets RFC 1035 (and updates)
  *
- *   Copyright 2021 Renzo Davoli - Virtual Square Team
+ *   Copyright 2021-2023 Renzo Davoli - Virtual Square Team
  *   University of Bologna - Italy
  *
  *   This library is free software; you can redistribute it and/or modify it
@@ -335,9 +335,10 @@ static struct iothdns_pkt *__iothdns_lookup(struct iothdns *iothdns,
 			//printf("%d %d\n", dnsno, iothdns->sockaddr[dnsno].sin46_family);
 			struct iothdns_header h = {id, IOTHDNS_QUERY | IOTHDNS_RD, name, type, IOTHDNS_CLASS_IN};
 			struct iothdns_pkt *pkt = iothdns_put_header(&h);
+			struct iovec pktbuf = iothdns_getbuf(pkt);
 			size_t len = dialog_function(iothdns->stack,
 					&iothdns->sockaddr[dnsno],
-					iothdns_buf(pkt), iothdns_buflen(pkt),
+					pktbuf.iov_base, pktbuf.iov_len,
 					outbuf, outbuflen);
 			char qname[IOTHDNS_MAXNAME];
 			iothdns_free(pkt);
@@ -535,7 +536,8 @@ int iothdns_udp_process_request(int fd,
 	iothdns_free(pkt);
 	if (pkt != NULL && IOTHDNS_IS_QUERY(h.flags)) {
 		pkt = parse_request(&h, arg);
-		ioth_sendto(fd, iothdns_buf(pkt), iothdns_buflen(pkt), 0, (struct sockaddr *) &from, fromlen);
+		struct iovec pktbuf = iothdns_getbuf(pkt);
+		ioth_sendto(fd, pktbuf.iov_base, pktbuf.iov_len, 0, (struct sockaddr *) &from, fromlen);
 	}
 	return len;
 }
@@ -553,9 +555,9 @@ int iothdns_tcp_process_request(int fd,
 	iothdns_free(pkt);
 	if (pkt != NULL && IOTHDNS_IS_QUERY(h.flags)) {
 		pkt = parse_request(&h, arg);
-		len = iothdns_buflen(pkt);
-		uint8_t tcpheader[2] = {len >> 8, len};
-		struct iovec iov_wr[] = {{tcpheader, sizeof(tcpheader)}, {iothdns_buf(pkt), len}};
+		struct iovec pktbuf = iothdns_getbuf(pkt);
+		uint8_t tcpheader[2] = {pktbuf.iov_len >> 8, pktbuf.iov_len};
+		struct iovec iov_wr[] = {{tcpheader, sizeof(tcpheader)}, pktbuf};
 		ioth_writev(fd, iov_wr, 2);
 	}
 	return len;

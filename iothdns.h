@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <netdb.h>
 #include <ioth.h>
 
@@ -158,10 +159,9 @@ void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6);
 
 /* BOTH COMPOSE/PARSE MODES */
 
-/* iothdns_buf retrurns the address of the packet buffer of vpkt*/
-void *iothdns_buf(struct iothdns_pkt *vpkt);
-/* iothdns_buflen retruns the length of iothdns_buf */
-size_t iothdns_buflen(struct iothdns_pkt *vpkt);
+/* iothdns_getbuf returns the address and len of the packet buffer of vpkt as a struct iovec (see iovec(3))*/
+struct iovec iothdns_getbuf(struct iothdns_pkt *vpkt);
+
 /* delete vpkt and free all the dynamically allocated memory */
 void iothdns_free(struct iothdns_pkt *vpkt);
 

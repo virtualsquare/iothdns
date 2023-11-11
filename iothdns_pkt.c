@@ -1,7 +1,7 @@
 /*
  *   iothdns_pkt.c: compose & parse dns packets RFC 1035 (and updates)
  *
- *   Copyright 2017-2021 Renzo Davoli - Virtual Square Team
+ *   Copyright 2017-2023 Renzo Davoli - Virtual Square Team
  *   University of Bologna - Italy
  *
  *   This library is free software; you can redistribute it and/or modify it
@@ -22,8 +22,10 @@
 #include <iothdns.h>
 #include <name2dns.h>
 
+#define IOTHDNS_COMPOSE 0x1
+
 struct iothdns_pkt {
-	struct volstream *vols; // flag: != NULL if compose mode
+	int flags;
 	FILE *f;
 	int count[IOTHDNS_SECTIONS];
 	union {
@@ -91,9 +93,10 @@ void iothdns_put_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
 
 struct iothdns_pkt *iothdns_put_header(struct iothdns_header *h) {
 	struct iothdns_pkt *new = calloc(1, sizeof(*new));
-	new->f = volstream_openv(&new->vols);
+	new->f = volstream_open();
 	if (new->f == NULL)
 		goto err;
+	new->flags = IOTHDNS_COMPOSE;
 	iothdns_put_int16(new, h->id);
 	iothdns_put_int16(new, h->flags);
 	iothdns_put_int16(new, 0); // QDCOUNT QUERY
@@ -136,7 +139,7 @@ void iothdns_put_rr(int section, struct iothdns_pkt *vpkt, struct iothdns_rr *rr
 	}
 }
 
-static void iothdns_put_flush(struct iothdns_pkt *vpkt) {
+static void iothdns_put_counters(struct iothdns_pkt *vpkt) {
 	backpatch_rdlength(vpkt);
 	fseek(vpkt->f, 2 * sizeof(uint16_t), SEEK_SET);
 	iothdns_put_int16(vpkt, vpkt->count[IOTHDNS_SEC_QUERY]);
@@ -225,7 +228,7 @@ void *iothdns_get_aaaa(struct iothdns_pkt *vpkt, void *addr_ipv6) {
 
 struct iothdns_pkt *iothdns_get_header(struct iothdns_header *h, void *buf, size_t size, char *qnamebuf) {
 	struct iothdns_pkt *new = calloc(1, sizeof(*new));
-	new->f = fmemopen(buf, size, "r");
+	new->f = fmemopen(buf, size, "r+");
 	if (new->f == NULL)
 		goto err;
 	h->id = iothdns_get_int16(new);
@@ -273,26 +276,23 @@ int iothdns_get_rr(struct iothdns_pkt *vpkt, struct iothdns_rr *rr, char *namebu
 	return section;
 }
 
-void *iothdns_buf(struct iothdns_pkt *vpkt) {
-	if (vpkt->vols == NULL) {
-		return vpkt->buf;
-	} else {
-		iothdns_put_flush(vpkt);
-		return volstream_getbuf(vpkt->vols);
+struct iovec iothdns_getbuf(struct iothdns_pkt *vpkt) {
+	struct iovec buf = {NULL, 0};
+	if (vpkt->flags & IOTHDNS_COMPOSE) {
+    iothdns_put_counters(vpkt);
+		if (volstream_getbuf(vpkt->f, &buf.iov_base, &buf.iov_len) < 0) {
+			buf.iov_base = NULL;
+			buf.iov_len = 0;
+		}
+  } else {
+		buf.iov_base = vpkt->buf;
+		buf.iov_len = vpkt->bufsize;
 	}
-}
-
-size_t iothdns_buflen(struct iothdns_pkt *vpkt) {
-	if (vpkt->vols == NULL) {
-		return vpkt->bufsize;
-	} else {
-		iothdns_put_flush(vpkt);
-		return volstream_getsize(vpkt->vols);
-	}
+	return buf;
 }
 
 void iothdns_free(struct iothdns_pkt *vpkt) {
-	if (vpkt->vols != NULL)
+	if (vpkt->flags & IOTHDNS_COMPOSE)
 		name_compr_free(vpkt->nc);
 	fclose(vpkt->f);
 	free(vpkt);
@@ -311,12 +311,7 @@ void iothdns_retrieve_header(struct iothdns_pkt *vpkt, uint16_t *id, uint16_t *f
 
 void iothdns_rewrite_header(struct iothdns_pkt *vpkt, uint16_t id, uint16_t flags) {
 	long pos = ftell(vpkt->f);
-	if (vpkt->vols == NULL) {
-		fclose(vpkt->f);
-		vpkt->f = fmemopen(vpkt->buf, vpkt->bufsize, "r+");
-		if (vpkt->f == NULL) return;
-	} else
-		fseek(vpkt->f, SEEK_SET, 0);
+	fseek(vpkt->f, SEEK_SET, 0);
 	iothdns_put_int16(vpkt, id);
 	iothdns_put_int16(vpkt, flags);
 	fseek(vpkt->f, SEEK_SET, pos);
