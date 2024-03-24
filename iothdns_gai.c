@@ -94,7 +94,7 @@ static int ioth_gaiadd(struct ioth_gaidata *data,
 									break;
 		case AF_INET6: {
 										 struct sockaddr_in6 *sin6 = (void *) (new + 1);
-										 sin6->sin6_family = AF_INET;
+										 sin6->sin6_family = AF_INET6;
 										 sin6->sin6_port = htons(port);
 										 sin6->sin6_addr = *((struct in6_addr *) addr);
 										 new->ai_addrlen = sizeof(*sin6);
