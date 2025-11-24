@@ -179,6 +179,7 @@ int iothdns_getaddrinfo(struct iothdns *iothdns,
 		return EAI_NONAME;
 	if (hints == NULL)
 		hints = &default_hints;
+	*res = NULL;
 	/* PHASE 1: get the port # and socktype availability */
 	struct ioth_gaiport gaiport[] = {
 		{SOCK_STREAM, "tcp", 0},
